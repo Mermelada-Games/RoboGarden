@@ -1,7 +1,5 @@
-using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using UnityEngine;
 
@@ -17,6 +15,21 @@ namespace Networking
         private Thread _receiveThread;
         private volatile bool _connected;
 
+        private PacketHandler _packetHandler;
+
+        private void Awake()
+        {
+            _packetHandler = new PacketHandler();
+            _packetHandler.OnMessageReceived += message =>
+            {
+                Debug.Log($"Message received: {message.sender}: {message.message}");
+            };
+            _packetHandler.OnPacketReceived += packet =>
+            {
+                Debug.Log($"Packet received: {packet.packetType}");
+            };
+        }
+
         private void Start()
         {
             Connect();
@@ -29,10 +42,11 @@ namespace Networking
 
             _connected = true;
 
+            Packet packet = new MessagePacket("Client", "Connected");
+            Send(packet);
+
             _receiveThread = new Thread(ReceiveLoop);
             _receiveThread.Start();
-
-            Send("Client Connected");
         }
 
         public void Disconnect()
@@ -44,6 +58,11 @@ namespace Networking
 
             _receiveThread?.Join(1000);
             _receiveThread = null;
+        }
+        
+        private void Update()
+        {
+            _packetHandler.ProcessPackets();
         }
 
         private void ReceiveLoop()
@@ -59,9 +78,9 @@ namespace Networking
 
                     if (!_connected)
                         return;
-                    
-                    string message = Encoding.ASCII.GetString(data, 0, received);
-                    Debug.Log($"Received: {message}");
+
+                    Packet packet = Serialization.Deserialize(data, received);
+                    _packetHandler.EnqueuePacket(packet);
                 }
                 catch (SocketException e)
                 {
@@ -74,9 +93,9 @@ namespace Networking
             }
         }
 
-        private void Send(string message)
+        private void Send(Packet packet)
         {
-            byte[] data = Encoding.ASCII.GetBytes(message);
+            byte[] data = Serialization.Serialize(packet);
             _socket.SendTo(data, _endPoint);
         }
 

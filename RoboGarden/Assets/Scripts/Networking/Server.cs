@@ -15,6 +15,24 @@ namespace Networking
         private EndPoint _endPoint;
         private Thread _receiveThread;
         private volatile bool _connected;
+        
+        private PacketHandler _packetHandler;
+
+        private void Awake()
+        {
+            _packetHandler = new PacketHandler();
+            _packetHandler.OnMessageReceived += message =>
+            {
+                Debug.Log($"Message received: {message.sender}: {message.message}");
+
+                Packet response = new MessagePacket("Server", message.message);
+                Send(response);
+            };
+            _packetHandler.OnPacketReceived += packet =>
+            {
+                Debug.Log($"Packet received: {packet.packetType}");
+            };
+        }
 
         private void Start()
         {
@@ -44,6 +62,11 @@ namespace Networking
             _receiveThread = null;
         }
 
+        private void Update()
+        {
+            _packetHandler.ProcessPackets();
+        }
+
         private void ReceiveLoop()
         {
             byte[] data = new byte[1024];
@@ -61,11 +84,8 @@ namespace Networking
                     if (_endPoint == null)
                         _endPoint = remote;
 
-                    string message = Encoding.ASCII.GetString(data, 0, received);
-                    Debug.Log($"Received: {message}");
-
-                    string response = $"Server: {message}";
-                    Send(response);
+                    Packet packet = Serialization.Deserialize(data, received);
+                    _packetHandler.EnqueuePacket(packet);
                 }
                 catch (SocketException e)
                 {
@@ -78,9 +98,9 @@ namespace Networking
             }
         }
 
-        private void Send(string message)
+        private void Send(Packet packet)
         {
-            byte[] data = Encoding.ASCII.GetBytes(message);
+            byte[] data = Serialization.Serialize(packet);
             _socket.SendTo(data, _endPoint);
         }
 
