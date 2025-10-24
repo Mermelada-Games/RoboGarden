@@ -11,6 +11,9 @@ namespace UI
         [SerializeField] private Button hostButton;
         [SerializeField] private Button joinButton;
         [SerializeField] private Button stopButton;
+        [SerializeField] private GameObject menuPanel;
+        [SerializeField] private Button openMenuButton;
+        [SerializeField] private Button closeMenuButton;
 
         private void Awake()
         {
@@ -22,21 +25,37 @@ namespace UI
             {
                 joinButton.onClick.AddListener(OnJoinButtonClicked);
             }
-            if(stopButton != null)
+            if (stopButton != null)
             {
                 stopButton.onClick.AddListener(OnStopButtonClicked);
+            }
+            if (openMenuButton != null)
+            {
+                openMenuButton.onClick.AddListener(() =>
+                {
+                    menuPanel.SetActive(!menuPanel.activeSelf);
+                });
+            }
+            if (closeMenuButton != null)
+            {
+                closeMenuButton.onClick.AddListener(() =>
+                {
+                    menuPanel.SetActive(false);
+                });
             }
         }
 
         private void OnHostButtonClicked()
         {
             networkManager.StartHost();
+            menuPanel.SetActive(false);
         }
 
         private void OnJoinButtonClicked()
         {
             string ip = ipInputField != null && !string.IsNullOrEmpty(ipInputField.text) ? ipInputField.text : "127.0.0.1";
             networkManager?.StartClient();
+            menuPanel.SetActive(false);
         }
 
         private void OnStopButtonClicked()
