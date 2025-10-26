@@ -1,46 +1,72 @@
+using Input;
 using UnityEngine;
 using UnityEngine.InputSystem;
-public class PlayerMovement : MonoBehaviour
+
+namespace Player
 {
-    public float moveSpeed = 5f;
-    public float jumpForce = 7f;
-    private Rigidbody rb;
-    private bool isGrounded;
-    private Vector2 moveInput;
-    
-    void Start()
+    public class PlayerMovement : MonoBehaviour
     {
-        rb = GetComponent<Rigidbody>();
-    }
-    void Update()
-    {
-        moveInput = new Vector2(
-            Keyboard.current.dKey.isPressed ? 1 : (Keyboard.current.aKey.isPressed ? -1 : 0),
-            Keyboard.current.wKey.isPressed ? 1 : (Keyboard.current.sKey.isPressed ? -1 : 0)
-        );
-        
-        Vector3 move = new Vector3(moveInput.x, 0f, moveInput.y);
-        
-        transform.position += move * moveSpeed * Time.deltaTime;
-        
-        if (Keyboard.current.spaceKey.wasPressedThisFrame && isGrounded)
+        [SerializeField] private float moveSpeed = 5f;
+        [SerializeField] private float jumpForce = 7f;
+
+        private Rigidbody _rb;
+        private bool _isGrounded;
+        private Vector2 _moveInput;
+
+        private void Awake()
         {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            isGrounded = false;
+            _rb = GetComponent<Rigidbody>();
         }
-    }
-    void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Ground"))
+
+        private void Start()
         {
-            isGrounded = true;
+            GameInput.Instance.OnJump += Jump;
+            GameInput.Instance.OnMove += OnMoveInput;
         }
-    }
-    void OnCollisionStay(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Ground"))
+
+        private void OnMoveInput(Vector2 moveInput)
         {
-            isGrounded = true;
+            _moveInput = moveInput;
+        }
+
+        private void Update()
+        {
+            Vector3 move = new Vector3(_moveInput.x, 0f, _moveInput.y);
+            _rb.MovePosition(transform.position + move * (moveSpeed * Time.fixedDeltaTime));
+        }
+
+        private void Jump()
+        {
+            if (_isGrounded)
+            {
+                _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                _isGrounded = false;
+            }
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (collision.gameObject.CompareTag("Ground") && Mathf.Abs(_rb.linearVelocity.y) < 0.05f)
+            {
+                _isGrounded = true;
+            }
+        }
+
+        private void OnCollisionStay(Collision collision)
+        {
+            if (collision.gameObject.CompareTag("Ground") && Mathf.Abs(_rb.linearVelocity.y) < 0.05f)
+            {
+                _isGrounded = true;
+            }
+        }
+        
+        private void OnDestroy()
+        {
+            if (GameInput.Instance != null)
+            {
+                GameInput.Instance.OnJump -= Jump;
+                GameInput.Instance.OnMove -= OnMoveInput;
+            }
         }
     }
 }
