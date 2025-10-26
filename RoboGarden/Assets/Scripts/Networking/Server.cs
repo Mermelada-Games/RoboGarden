@@ -1,7 +1,5 @@
-using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using UnityEngine;
 
@@ -41,14 +39,23 @@ namespace Networking
 
         public void StartServer()
         {
-            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, port);
-            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            _socket.Bind(ipEndPoint);
+            try
+            {
+                IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, port);
+                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                _socket.ReceiveTimeout = 5000;
+                _socket.Bind(ipEndPoint);
 
-            _connected = true;
+                _connected = true;
 
-            _receiveThread = new Thread(ReceiveLoop);
-            _receiveThread.Start();
+                _receiveThread = new Thread(ReceiveLoop);
+                _receiveThread.IsBackground = true;
+                _receiveThread.Start();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Failed to start: {e.Message}");
+            }
         }
 
         public void StopServer()
@@ -58,13 +65,18 @@ namespace Networking
             _socket?.Close();
             _socket = null;
 
-            _receiveThread.Join(1000);
+            _receiveThread?.Join(1000);
             _receiveThread = null;
+
+            Debug.Log("Stopped");
         }
 
         private void Update()
         {
-            _packetHandler.ProcessPackets();
+            if (_connected)
+            {
+                _packetHandler.ProcessPackets();
+            }
         }
 
         private void ReceiveLoop()
@@ -81,32 +93,55 @@ namespace Networking
                     if (!_connected)
                         return;
 
-                    if (_endPoint == null)
-                        _endPoint = remote;
+                    _endPoint = remote;
 
                     Packet packet = Serialization.Deserialize(data, received);
                     _packetHandler.EnqueuePacket(packet);
                 }
                 catch (SocketException e)
                 {
+                    if (e.SocketErrorCode == SocketError.TimedOut)
+                        continue;
+
                     if (!_connected)
                         break;
-                    
-                    Debug.LogError($"Socket error: {e.Message}");
+
+                    Debug.LogWarning($"Socket error: {e.SocketErrorCode}");
+                }
+                catch (System.Exception e)
+                {
+                    if (_connected)
+                        Debug.LogError($"Error: {e.Message}");
                     break;
                 }
             }
+
+            Debug.Log("Receive loop ended");
         }
 
-        private void Send(Packet packet)
+        public void Send(Packet packet)
         {
-            byte[] data = Serialization.Serialize(packet);
-            _socket.SendTo(data, _endPoint);
+            if (!_connected || _socket == null || _endPoint == null)
+            {
+                return;
+            }
+
+            try
+            {
+                byte[] data = Serialization.Serialize(packet);
+                _socket.SendTo(data, _endPoint);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Send failed: {e.Message}");
+            }
         }
 
         private void OnApplicationQuit()
         {
             StopServer();
         }
+
+        public PacketHandler GetPacketHandler() => _packetHandler;
     }
 }

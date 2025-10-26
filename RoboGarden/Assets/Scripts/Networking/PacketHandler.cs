@@ -7,9 +7,10 @@ namespace Networking
     public class PacketHandler
     {
         public delegate void MessageHandler(MessagePacket packet);
+        public delegate void PlayerMovementHandler(PlayerMovementPacket packet);
         
         public event MessageHandler OnMessageReceived;
-
+        public event PlayerMovementHandler OnPlayerMovementReceived;
         public event Action<Packet> OnPacketReceived;
         
         private readonly Queue<Packet> _packetQueue = new Queue<Packet>();
@@ -50,6 +51,9 @@ namespace Networking
             {
                 case PacketType.Message:
                     OnMessageReceived?.Invoke(packet as MessagePacket);
+                    break;
+                case PacketType.PlayerMovement:
+                    OnPlayerMovementReceived?.Invoke(packet as PlayerMovementPacket);
                     break;
                 default:
                     Debug.LogError($"Unhandled packet type: {packet.packetType}");

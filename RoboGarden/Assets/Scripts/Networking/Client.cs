@@ -37,16 +37,27 @@ namespace Networking
 
         public void Connect()
         {
-            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            _endPoint = new IPEndPoint(IPAddress.Parse(ip), port);
+            try
+            {
+                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                _socket.ReceiveTimeout = 5000;
+                _endPoint = new IPEndPoint(IPAddress.Parse(ip), port);
 
-            _connected = true;
+                _connected = true;
 
-            Packet packet = new MessagePacket("Client", "Connected");
-            Send(packet);
+                Packet packet = new MessagePacket("Client", "Connected");
+                Send(packet);
 
-            _receiveThread = new Thread(ReceiveLoop);
-            _receiveThread.Start();
+                _receiveThread = new Thread(ReceiveLoop);
+                _receiveThread.IsBackground = true;
+                _receiveThread.Start();
+
+                Debug.Log("Connected to server");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Connection failed: {e.Message}");
+            }
         }
 
         public void Disconnect()
@@ -58,11 +69,16 @@ namespace Networking
 
             _receiveThread?.Join(1000);
             _receiveThread = null;
+
+            Debug.Log("Disconnected");
         }
         
         private void Update()
         {
-            _packetHandler.ProcessPackets();
+            if (_connected)
+            {
+                _packetHandler.ProcessPackets();
+            }
         }
 
         private void ReceiveLoop()
@@ -84,24 +100,48 @@ namespace Networking
                 }
                 catch (SocketException e)
                 {
+                    if (e.SocketErrorCode == SocketError.TimedOut)
+                        continue;
+
                     if (!_connected)
                         break;
 
-                    Debug.LogError($"Socket error: {e.Message}");
+                    Debug.LogWarning($"Socket error: {e.SocketErrorCode}");
+                }
+                catch (System.Exception e)
+                {
+                    if (_connected)
+                        Debug.LogError($"Error: {e.Message}");
                     break;
                 }
             }
+
+            Debug.Log("Receive loop ended");
         }
 
-        private void Send(Packet packet)
+        public void Send(Packet packet)
         {
-            byte[] data = Serialization.Serialize(packet);
-            _socket.SendTo(data, _endPoint);
+            if (!_connected || _socket == null || _endPoint == null)
+            {
+                return;
+            }
+
+            try
+            {
+                byte[] data = Serialization.Serialize(packet);
+                _socket.SendTo(data, _endPoint);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Send failed: {e.Message}");
+            }
         }
 
         private void OnApplicationQuit()
         {
             Disconnect();
         }
+
+        public PacketHandler GetPacketHandler() => _packetHandler;
     }
 }
