@@ -454,12 +454,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -502,6 +502,8 @@ MonoBehaviour:
   menuPanel: {fileID: 3793944135723503427}
   openMenuButton: {fileID: 2018554229547263921}
   closeMenuButton: {fileID: 7609072451342785596}
+  playerPrefab: {fileID: 4898296906844355904, guid: b098a1ac1ed38c64196b9bcdc7970609, type: 3}
+  networkPlayerPrefab: {fileID: 7857045293071080577, guid: 09d84808bbbd18f4da83003d64253f7b, type: 3}
 --- !u!1 &3363410476390791498
 GameObject:
   m_ObjectHideFlags: 0
@@ -2009,4 +2011,4 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Enter text...
+  m_Text: Enter IP
