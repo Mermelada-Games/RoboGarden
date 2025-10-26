@@ -45,3 +45,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Networking.Server
   port: 9050
+  networkPlayerPrefab: {fileID: 7857045293071080577, guid: 09d84808bbbd18f4da83003d64253f7b, type: 3}

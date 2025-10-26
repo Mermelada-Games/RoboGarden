@@ -6,7 +6,7 @@ namespace UI
 {
     public class NetworkUI : MonoBehaviour
     {
-        [SerializeField] private Networking.NetworkManager networkManager;
+        [SerializeField] private NetworkManager networkManager;
         [SerializeField] private InputField ipInputField;
         [SerializeField] private Button hostButton;
         [SerializeField] private Button joinButton;
@@ -14,6 +14,8 @@ namespace UI
         [SerializeField] private GameObject menuPanel;
         [SerializeField] private Button openMenuButton;
         [SerializeField] private Button closeMenuButton;
+        [SerializeField] private GameObject playerPrefab;
+        [SerializeField] private GameObject networkPlayerPrefab;
 
         private void Awake()
         {
@@ -49,6 +51,8 @@ namespace UI
         {
             networkManager.StartHost();
             menuPanel.SetActive(false);
+            Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
+            Instantiate(networkPlayerPrefab, Vector3.one, Quaternion.identity);
         }
 
         private void OnJoinButtonClicked()
@@ -56,6 +60,8 @@ namespace UI
             string ip = ipInputField != null && !string.IsNullOrEmpty(ipInputField.text) ? ipInputField.text : "127.0.0.1";
             networkManager?.StartClient();
             menuPanel.SetActive(false);
+            Instantiate(playerPrefab, Vector3.one, Quaternion.identity);
+            Instantiate(networkPlayerPrefab, Vector3.zero, Quaternion.identity);
         }
 
         private void OnStopButtonClicked()

@@ -33,8 +33,11 @@ namespace Player
             _client = FindFirstObjectByType<Networking.Client>();
             _server = FindFirstObjectByType<Networking.Server>();
                 
-            GameInput.Instance.OnJump += Jump;
-            GameInput.Instance.OnMove += OnMoveInput;
+            if (GameInput.Instance != null)
+            {
+                GameInput.Instance.OnJump += Jump;
+                GameInput.Instance.OnMove += OnMoveInput;
+            }
         }
 
         private void OnMoveInput(Vector2 moveInput)

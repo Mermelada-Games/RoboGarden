@@ -682,6 +682,8 @@ MonoBehaviour:
   menuPanel: {fileID: 2089217841}
   openMenuButton: {fileID: 29184076}
   closeMenuButton: {fileID: 1350251760}
+  playerPrefab: {fileID: 4898296906844355904, guid: b098a1ac1ed38c64196b9bcdc7970609, type: 3}
+  networkPlayerPrefab: {fileID: 7857045293071080577, guid: 09d84808bbbd18f4da83003d64253f7b, type: 3}
 --- !u!114 &475402190
 MonoBehaviour:
   m_ObjectHideFlags: 0
