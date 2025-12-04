@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 92532243605610316}
   - component: {fileID: 3911348235883379695}
   - component: {fileID: 1498925144998835728}
-  - component: {fileID: 5004367666954042402}
+  - component: {fileID: 1136649042608560086}
   m_Layer: 0
   m_Name: Network Player
   m_TagString: Untagged
@@ -157,9 +157,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Player.PlayerMovement
   moveSpeed: 5
   jumpForce: 7
-  networkUpdateRate: 0.05
+  netUpdateRate: 0.05
   isLocalPlayer: 0
---- !u!114 &5004367666954042402
+--- !u!114 &1136649042608560086
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -168,6 +168,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 7857045293071080577}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5dccce26851d1254ea52ce8f49d41d58, type: 3}
+  m_Script: {fileID: 11500000, guid: 16517b8877470714096f837044617b55, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Player.NetworkPlayerController
+  m_EditorClassIdentifier: Assembly-CSharp::Networking.NetworkObject
+  networkId: 2
+  isLocallyOwned: 0
+  interpolationTime: 0.1
+  sendRate: 0.05

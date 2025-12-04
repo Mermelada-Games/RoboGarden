@@ -20,13 +20,20 @@ namespace Networking
         private void Awake()
         {
             _packetHandler = new PacketHandler();
+
             _packetHandler.OnMessageReceived += message =>
             {
-                Debug.Log($"Message received: {message.sender}: {message.message}");
+                Debug.Log($"Message from {message.sender}: {message.message}");
             };
-            _packetHandler.OnPacketReceived += packet =>
+
+            _packetHandler.OnReplicationReceived += packet => 
             {
-                Debug.Log($"Packet received: {packet.packetType}");
+                ReplicationManager.Instance.HandleReplicationPacket(packet);
+            };
+
+            _packetHandler.OnActionReceived += packet =>
+            {
+                ReplicationManager.Instance.HandleActionPacket(packet);
             };
         }
 

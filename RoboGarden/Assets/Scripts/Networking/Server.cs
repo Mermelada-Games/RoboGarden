@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Networking
@@ -10,32 +11,34 @@ namespace Networking
         [SerializeField] private int port = 9050;
         
         private Socket _socket;
-        private EndPoint _endPoint;
         private Thread _receiveThread;
         private volatile bool _connected;
-        
+        private List<EndPoint> _connectedClients = new List<EndPoint>();
         private PacketHandler _packetHandler;
 
         private void Awake()
         {
             _packetHandler = new PacketHandler();
+
             _packetHandler.OnMessageReceived += message =>
             {
-                Debug.Log($"Message received: {message.sender}: {message.message}");
-
-                Packet response = new MessagePacket("Server", message.message);
-                Send(response);
+                Debug.Log($"Server Msg: {message.message}");
             };
-            _packetHandler.OnPacketReceived += packet =>
+
+            _packetHandler.OnReplicationReceived += packet =>
             {
-                Debug.Log($"Packet received: {packet.packetType}");
+                ReplicationManager.Instance.HandleReplicationPacket(packet);
+                Broadcast(packet);
+            };
+
+            _packetHandler.OnActionReceived += packet =>
+            {
+                ReplicationManager.Instance.HandleActionPacket(packet);
+                Broadcast(packet);
             };
         }
 
-        private void Start()
-        {
-            StartServer();
-        }
+        private void Start() => StartServer();
 
         public void StartServer()
         {
@@ -43,105 +46,72 @@ namespace Networking
             {
                 IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, port);
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                _socket.ReceiveTimeout = 5000;
                 _socket.Bind(ipEndPoint);
-
                 _connected = true;
 
                 _receiveThread = new Thread(ReceiveLoop);
                 _receiveThread.IsBackground = true;
                 _receiveThread.Start();
+                Debug.Log("Server Started");
             }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Failed to start: {e.Message}");
-            }
-        }
-
-        public void StopServer()
-        {
-            _connected = false;
-
-            _socket?.Close();
-            _socket = null;
-
-            _receiveThread?.Join(1000);
-            _receiveThread = null;
-
-            Debug.Log("Stopped");
+            catch (System.Exception e) { Debug.LogError($"Server Start Error: {e.Message}"); }
         }
 
         private void Update()
         {
-            if (_connected)
-            {
-                _packetHandler.ProcessPackets();
-            }
+            if (_connected) _packetHandler.ProcessPackets();
         }
 
         private void ReceiveLoop()
         {
             byte[] data = new byte[1024];
-            EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+            EndPoint remoteIp = new IPEndPoint(IPAddress.Any, 0);
 
             while (_connected)
             {
                 try
                 {
-                    int received = _socket.ReceiveFrom(data, ref remote);
-                    
-                    if (!_connected)
-                        return;
+                    int received = _socket.ReceiveFrom(data, ref remoteIp);
 
-                    _endPoint = remote;
+                    bool known = false;
+                    foreach(var c in _connectedClients) {
+                        if(c.ToString() == remoteIp.ToString()) known = true;
+                    }
+                    if(!known) _connectedClients.Add(remoteIp);
 
                     Packet packet = Serialization.Deserialize(data, received);
                     _packetHandler.EnqueuePacket(packet);
                 }
-                catch (SocketException e)
-                {
-                    if (e.SocketErrorCode == SocketError.TimedOut)
-                        continue;
-
-                    if (!_connected)
-                        break;
-
-                    Debug.LogWarning($"Socket error: {e.SocketErrorCode}");
-                }
-                catch (System.Exception e)
-                {
-                    if (_connected)
-                        Debug.LogError($"Error: {e.Message}");
-                    break;
-                }
+                catch (System.Exception) {}
             }
-
-            Debug.Log("Receive loop ended");
         }
 
-        public void Send(Packet packet)
+        public void Broadcast(Packet packet)
         {
-            if (!_connected || _socket == null || _endPoint == null)
+            foreach (var clientEp in _connectedClients)
             {
-                return;
+                SendTo(packet, clientEp);
             }
+        }
 
+        private void SendTo(Packet packet, EndPoint target)
+        {
             try
             {
                 byte[] data = Serialization.Serialize(packet);
-                _socket.SendTo(data, _endPoint);
+                _socket.SendTo(data, target);
             }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Send failed: {e.Message}");
-            }
+            catch { }
         }
 
-        private void OnApplicationQuit()
+        public void StopServer()
         {
-            StopServer();
+            _connected = false;
+            _socket?.Close();
+            _receiveThread?.Join(100);
         }
 
+        private void OnApplicationQuit() => StopServer();
         public PacketHandler GetPacketHandler() => _packetHandler;
     }
 }

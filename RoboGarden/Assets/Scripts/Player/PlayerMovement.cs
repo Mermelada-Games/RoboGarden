@@ -1,6 +1,7 @@
 using System.Collections;
 using Input;
 using UnityEngine;
+using Networking;
 
 namespace Player
 {
@@ -15,25 +16,21 @@ namespace Player
         private Rigidbody _rb;
         private bool _isGrounded;
         private Vector2 _moveInput;
+        private NetworkObject _netObj;
         private float _lastNetworkUpdate;
         private Vector3 _lastSentPosition;
-
-        private Networking.Client _client;
-        private Networking.Server _server;
+        private Server _server;
+        private Client _client;
 
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
+            _netObj = GetComponent<NetworkObject>();
         }
 
         private void Start()
         {
-            if (!isLocalPlayer) return;
-
-            _client = FindFirstObjectByType<Networking.Client>();
-            _server = FindFirstObjectByType<Networking.Server>();
-                
-            if (GameInput.Instance != null)
+            if (_netObj.isLocallyOwned && GameInput.Instance != null)
             {
                 GameInput.Instance.OnJump += Jump;
                 GameInput.Instance.OnMove += OnMoveInput;
@@ -44,25 +41,14 @@ namespace Player
         {
             _moveInput = moveInput;
         }
+        
 
         private void Update()
         {
-            if (!isLocalPlayer) return;
+            if (!_netObj.isLocallyOwned) return;
 
             Vector3 move = new Vector3(_moveInput.x, 0f, _moveInput.y);
             _rb.MovePosition(transform.position + move * (moveSpeed * Time.fixedDeltaTime));
-
-            if (Time.time - _lastNetworkUpdate >= netUpdateRate)
-            {
-                float distanceMoved = Vector3.Distance(transform.position, _lastSentPosition);
-                    
-                if (distanceMoved > 0.01f)
-                {
-                    SendMovementUpdate();
-                    _lastNetworkUpdate = Time.time;
-                    _lastSentPosition = transform.position;
-                }
-            }
         }
 
         private void Jump()
@@ -71,55 +57,14 @@ namespace Player
             {
                 _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
                 _isGrounded = false;
+                ReplicationManager.Instance.SendAction(ActionType.Jump, _netObj.networkId, Vector3.zero);
             }
         }
 
-        private void SendMovementUpdate()
-        {
-            Networking.PlayerMovementPacket packet = new Networking.PlayerMovementPacket(
-                transform.position
-            );
+        private void OnCollisionEnter(Collision collision) => CheckGround(collision);
+        private void OnCollisionStay(Collision collision) => CheckGround(collision);
 
-            if (_client)
-            {
-                _client.Send(packet);
-            }
-            else if (_server)
-            {
-                _server.Send(packet);
-            }
-        }
-
-        public void ApplyNetworkMovement(Vector3 position)
-        {
-            StartCoroutine(InterpolateToPosition(position));
-        }
-
-        private IEnumerator InterpolateToPosition(Vector3 targetPos)
-        {
-            Vector3 startPos = transform.position;
-            float elapsed = 0f;
-            float duration = netUpdateRate;
-
-            while (elapsed < duration)
-            {
-                transform.position = Vector3.Lerp(startPos, targetPos, elapsed / duration);
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-
-            transform.position = targetPos;
-        }
-
-        private void OnCollisionEnter(Collision collision)
-        {
-            if (collision.gameObject.CompareTag("Ground") && Mathf.Abs(_rb.linearVelocity.y) < 0.05f)
-            {
-                _isGrounded = true;
-            }
-        }
-
-        private void OnCollisionStay(Collision collision)
+        private void CheckGround(Collision collision)
         {
             if (collision.gameObject.CompareTag("Ground") && Mathf.Abs(_rb.linearVelocity.y) < 0.05f)
             {
@@ -129,7 +74,7 @@ namespace Player
         
         private void OnDestroy()
         {
-            if (isLocalPlayer && GameInput.Instance != null)
+            if (_netObj.isLocallyOwned && GameInput.Instance != null)
             {
                 GameInput.Instance.OnJump -= Jump;
                 GameInput.Instance.OnMove -= OnMoveInput;

@@ -7,11 +7,12 @@ namespace Networking
     public class PacketHandler
     {
         public delegate void MessageHandler(MessagePacket packet);
-        public delegate void PlayerMovementHandler(PlayerMovementPacket packet);
+        public delegate void ReplicationHandler(ReplicationPacket packet);
+        public delegate void ActionHandler(ActionPacket packet);
         
         public event MessageHandler OnMessageReceived;
-        public event PlayerMovementHandler OnPlayerMovementReceived;
-        public event Action<Packet> OnPacketReceived;
+        public event ReplicationHandler OnReplicationReceived;
+        public event ActionHandler OnActionReceived;
         
         private readonly Queue<Packet> _packetQueue = new Queue<Packet>();
         private readonly object _queueLock = new object();
@@ -45,18 +46,16 @@ namespace Networking
 
         private void ProcessPacket(Packet packet)
         {
-            OnPacketReceived?.Invoke(packet);
-
             switch (packet.packetType)
             {
                 case PacketType.Message:
                     OnMessageReceived?.Invoke(packet as MessagePacket);
                     break;
-                case PacketType.PlayerMovement:
-                    OnPlayerMovementReceived?.Invoke(packet as PlayerMovementPacket);
+                case PacketType.Replication:
+                    OnReplicationReceived?.Invoke(packet as ReplicationPacket);
                     break;
-                default:
-                    Debug.LogError($"Unhandled packet type: {packet.packetType}");
+                case PacketType.Action:
+                    OnActionReceived?.Invoke(packet as ActionPacket);
                     break;
             }
         }

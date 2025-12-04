@@ -51,17 +51,34 @@ namespace UI
         {
             networkManager.StartHost();
             menuPanel.SetActive(false);
-            Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
-            Instantiate(networkPlayerPrefab, Vector3.one, Quaternion.identity);
+            SpawnLocalPlayer(1, Vector3.zero); 
+            SpawnRemotePlayer(2, Vector3.one);
         }
 
         private void OnJoinButtonClicked()
         {
-            string ip = ipInputField != null && !string.IsNullOrEmpty(ipInputField.text) ? ipInputField.text : "127.0.0.1";
             networkManager?.StartClient();
             menuPanel.SetActive(false);
-            Instantiate(playerPrefab, Vector3.one, Quaternion.identity);
-            Instantiate(networkPlayerPrefab, Vector3.zero, Quaternion.identity);
+            SpawnLocalPlayer(2, Vector3.one);
+            SpawnRemotePlayer(1, Vector3.zero);
+        }
+
+        private void SpawnLocalPlayer(int id, Vector3 pos)
+        {
+            GameObject p = Instantiate(playerPrefab, pos, Quaternion.identity);
+            NetworkObject netObj = p.GetComponent<NetworkObject>();
+            
+            netObj.networkId = id;
+            netObj.isLocallyOwned = true;
+        }
+
+        private void SpawnRemotePlayer(int id, Vector3 pos)
+        {
+            GameObject p = Instantiate(networkPlayerPrefab, pos, Quaternion.identity);
+            NetworkObject netObj = p.GetComponent<NetworkObject>();
+            
+            netObj.networkId = id;
+            netObj.isLocallyOwned = false;
         }
 
         private void OnStopButtonClicked()

@@ -6,7 +6,14 @@ namespace Networking
     public enum PacketType
     {
         Message,
-        PlayerMovement
+        Replication,
+        Action
+    }
+
+    public enum ActionType
+    {
+        Jump, 
+        CatchPackage
     }
 
     [Serializable]
@@ -34,28 +41,46 @@ namespace Networking
     }
 
     [Serializable]
-    public class PlayerMovementPacket : Packet
+    public class ReplicationPacket : Packet
     {
+        public int networkId;
         public Vec3 position;
+        public Vec4 rotation;
 
-        public PlayerMovementPacket(Vector3 position) : base(PacketType.PlayerMovement)
+        public ReplicationPacket(int id, Vector3 pos, Quaternion rot) : base(PacketType.Replication)
         {
-            this.position = new Vec3(position);
+            this.networkId = id;
+            this.position = new Vec3(pos);
+            this.rotation = new Vec4(rot);
+        }
+    }
+
+    [Serializable]
+    public class ActionPacket : Packet
+    {
+        public ActionType actionType;
+        public int networkId;
+        public Vec3 direction;
+
+        public ActionPacket(ActionType action, int id, Vector3 dir) : base(PacketType.Action)
+        {
+            this.actionType = action;
+            this.networkId = id;
+            this.direction = new Vec3(dir);
         }
     }
 
     [Serializable]
     public struct Vec3
     {
-        public float x;
-        public float y;
-        public float z;
+        public float x, y, z;
+        public Vec3(Vector3 v) { x = v.x; y = v.y; z = v.z; }
+    }
 
-        public Vec3(Vector3 vector)
-        {
-            x = vector.x;
-            y = vector.y;
-            z = vector.z;
-        }
+    [Serializable]
+    public struct Vec4
+    {
+        public float x, y, z, w;
+        public Vec4(Quaternion q) { x = q.x; y = q.y; z = q.z; w = q.w; }
     }
 }
