@@ -53,6 +53,7 @@ namespace UI
             menuPanel.SetActive(false);
             SpawnLocalPlayer(1, Vector3.zero); 
             SpawnRemotePlayer(2, Vector3.one);
+            StartGameplay();
         }
 
         private void OnJoinButtonClicked()
@@ -79,6 +80,14 @@ namespace UI
             
             netObj.networkId = id;
             netObj.isLocallyOwned = false;
+        }
+        private void StartGameplay()
+        {
+            BoxGenerator boxGen = FindFirstObjectByType<BoxGenerator>();
+            if (boxGen != null)
+            {
+                boxGen.InvokeRepeating("GenerateBox", 2f, 70f);
+            }
         }
 
         private void OnStopButtonClicked()

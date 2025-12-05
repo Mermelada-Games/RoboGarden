@@ -66,7 +66,7 @@ namespace Player
 
         private void CheckGround(Collision collision)
         {
-            if (collision.gameObject.CompareTag("Ground") && Mathf.Abs(_rb.linearVelocity.y) < 0.05f)
+            if ((collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Button")) && Mathf.Abs(_rb.linearVelocity.y) < 0.05f)
             {
                 _isGrounded = true;
             }
