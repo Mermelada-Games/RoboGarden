@@ -12,6 +12,7 @@ namespace Input
 
         public event Action OnJump;
         public event Action<Vector2> OnMove;
+        public event Action OnInteract;
 
         private void Awake()
         {
@@ -30,6 +31,7 @@ namespace Input
                 _playerInputActions.Player.Jump.performed += Jump;
                 _playerInputActions.Player.Move.performed += Move;
                 _playerInputActions.Player.Move.canceled += Move;
+                _playerInputActions.Player.Interact.performed += Interact;
             }
         }
 
@@ -41,6 +43,11 @@ namespace Input
         private void Move(InputAction.CallbackContext context)
         {
             OnMove?.Invoke(context.canceled ? Vector2.zero : context.ReadValue<Vector2>());
+        }
+
+        private void Interact(InputAction.CallbackContext context)
+        {
+            OnInteract?.Invoke();
         }
         
         private void OnDestroy()

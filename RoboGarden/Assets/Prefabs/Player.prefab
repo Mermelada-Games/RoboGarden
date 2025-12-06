@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 7158539549833731320}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -156,8 +156,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: daa0740787abccf458a09fbf4d7263d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player.PlayerMovement
+  networkId: 2
   moveSpeed: 5
   jumpForce: 7
+  rotationSpeed: 10
   netUpdateRate: 0.05
   isLocalPlayer: 1
 --- !u!114 &7158539549833731320

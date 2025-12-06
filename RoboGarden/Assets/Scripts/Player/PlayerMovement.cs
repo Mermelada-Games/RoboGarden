@@ -29,6 +29,7 @@ namespace Player
 
         [SerializeField] private float netUpdateRate = 0.05f;
         [SerializeField] private bool isLocalPlayer = true;
+        public bool IsLocalPlayer => isLocalPlayer;
 
         private Rigidbody _rb;
         private PlayerInventory _inventory;
@@ -148,6 +149,11 @@ namespace Player
         private void OnCollisionStay(Collision collision) => CheckGround(collision);
         private void OnTriggerEnter(Collider other)
         {
+            PlayerMovement p = other.GetComponent<PlayerMovement>();
+            if (p != null && p.IsLocalPlayer)
+            {
+                isLocalPlayer = true;
+            }
             if(other.gameObject.CompareTag("Placa"))
             {
                 PlacaEtiqueta placa = other.gameObject.GetComponent<PlacaEtiqueta>();

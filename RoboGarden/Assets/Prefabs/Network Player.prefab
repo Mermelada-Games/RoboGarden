@@ -48,7 +48,7 @@ GameObject:
   - component: {fileID: 4371769594058187209}
   m_Layer: 0
   m_Name: Network Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -190,6 +190,7 @@ MonoBehaviour:
   networkId: 2
   moveSpeed: 5
   jumpForce: 7
+  rotationSpeed: 10
   netUpdateRate: 0.05
   isLocalPlayer: 0
 --- !u!114 &4371769594058187209
