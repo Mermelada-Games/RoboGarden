@@ -54,10 +54,10 @@ namespace Networking
             {
                 case PacketType.Message:
                     return JsonUtility.FromJson<MessagePacket>(json);
+                case PacketType.PlayerMovement:
+                    return JsonUtility.FromJson<PlayerMovementPacket>(json);
                 case PacketType.Replication:
                     return JsonUtility.FromJson<ReplicationPacket>(json);
-                case PacketType.Action:
-                    return JsonUtility.FromJson<ActionPacket>(json);
                 default:
                     Debug.LogError($"Unknown packet type: {type}");
                     return null;

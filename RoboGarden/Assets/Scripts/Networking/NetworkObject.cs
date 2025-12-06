@@ -1,105 +1,84 @@
 using UnityEngine;
-using System.Collections;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Networking
 {
-    public class NetworkObject : MonoBehaviour
+    public abstract class NetworkObject : MonoBehaviour
     {
-        [Header("Identity")]
         public int networkId;
-        public bool isLocallyOwned;
 
-        [Header("Smoothing")]
-        [SerializeField] private float interpolationTime = 0.1f;
-        [SerializeField] private float sendRate = 0.05f;
-
-        private Vector3 _targetPosition;
-        private Quaternion _targetRotation;
-        private float _lastSendTime;
-        private Vector3 _lastSentPos;
-        private Quaternion _lastSentRot;
-
-        private Client _client;
-        private Server _server;
-
-        private void Start()
+        protected virtual void Start()
         {
-            if(ReplicationManager.Instance != null)
-                ReplicationManager.Instance.RegisterObject(networkId, this);
-
-            _targetPosition = transform.position;
-            _targetRotation = transform.rotation;
-
-            if (isLocallyOwned)
+            if (ReplicationManager.Instance != null)
             {
-                _client = FindFirstObjectByType<Client>();
-                _server = FindFirstObjectByType<Server>();
+                ReplicationManager.Instance.RegisterObject(this);
             }
         }
 
-        private void OnDestroy()
+        protected virtual void OnDestroy()
         {
-            if(ReplicationManager.Instance != null)
+            if (ReplicationManager.Instance != null)
+            {
                 ReplicationManager.Instance.UnregisterObject(networkId);
+            }
         }
 
-        private void Update()
+        public abstract void OnReplication(ReplicationAction action, string payload);
+        public abstract string SerializeState();
+
+        protected void BroadcastStateUpdate()
         {
-            if (isLocallyOwned)
+            if (ReplicationManager.Instance != null)
             {
-                if (Time.time - _lastSendTime >= sendRate)
+                ReplicationManager.Instance.SendReplication(
+                    networkId, 
+                    ReplicationAction.Update, 
+                    SerializeState()
+                );
+            }
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (Application.isPlaying) return;
+
+            if (gameObject.scene.rootCount == 0) return;
+
+            if (networkId == 0)
+            {
+                AssignUniqueId();
+            }
+            else
+            {
+                NetworkObject[] allObjects = FindObjectsByType<NetworkObject>(FindObjectsSortMode.None);
+                foreach (var obj in allObjects)
                 {
-                    if (Vector3.Distance(transform.position, _lastSentPos) > 0.01f || 
-                        Quaternion.Angle(transform.rotation, _lastSentRot) > 1f)
+                    if (obj != this && obj.networkId == this.networkId)
                     {
-                        SendUpdate();
-                        _lastSendTime = Time.time;
-                        _lastSentPos = transform.position;
-                        _lastSentRot = transform.rotation;
+                        AssignUniqueId();
+                        break;
                     }
                 }
             }
         }
 
-        private void SendUpdate()
+        private void AssignUniqueId()
         {
-            ReplicationPacket packet = new ReplicationPacket(
-                networkId,
-                transform.position,
-                transform.rotation
-            );
-
-            if (_client != null) _client.Send(packet);
-            else if (_server != null) _server.Broadcast(packet);
-        }
-
-        public void OnNetworkUpdate(Vector3 pos, Quaternion rot)
-        {
-            if (isLocallyOwned) return;
-
-            _targetPosition = pos;
-            _targetRotation = rot;
+            NetworkObject[] allObjects = FindObjectsByType<NetworkObject>(FindObjectsSortMode.None);
             
-            StopAllCoroutines();
-            StartCoroutine(Interpolate());
-        }
-
-        private IEnumerator Interpolate()
-        {
-            float elapsed = 0f;
-            Vector3 startPos = transform.position;
-            Quaternion startRot = transform.rotation;
-
-            while (elapsed < interpolationTime)
+            int maxId = 0;
+            foreach (var obj in allObjects)
             {
-                transform.position = Vector3.Lerp(startPos, _targetPosition, elapsed / interpolationTime);
-                transform.rotation = Quaternion.Slerp(startRot, _targetRotation, elapsed / interpolationTime);
-                elapsed += Time.deltaTime;
-                yield return null;
+                if (obj.networkId > maxId) maxId = obj.networkId;
             }
 
-            transform.position = _targetPosition;
-            transform.rotation = _targetRotation;
+            networkId = maxId + 1;
+
+            EditorUtility.SetDirty(this);
         }
+#endif
     }
 }

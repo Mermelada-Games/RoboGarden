@@ -19,22 +19,9 @@ namespace Networking
         private void Awake()
         {
             _packetHandler = new PacketHandler();
-
             _packetHandler.OnMessageReceived += message =>
             {
-                Debug.Log($"Server Msg: {message.message}");
-            };
-
-            _packetHandler.OnReplicationReceived += packet =>
-            {
-                ReplicationManager.Instance.HandleReplicationPacket(packet);
-                Broadcast(packet);
-            };
-
-            _packetHandler.OnActionReceived += packet =>
-            {
-                ReplicationManager.Instance.HandleActionPacket(packet);
-                Broadcast(packet);
+                Debug.Log($"Message received {message.sender}: {message.message}");
             };
         }
 
@@ -46,8 +33,10 @@ namespace Networking
             {
                 IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, port);
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                _socket.ReceiveTimeout = 5000;
                 _socket.Bind(ipEndPoint);
                 _connected = true;
+                _connectedClients.Clear();
 
                 _receiveThread = new Thread(ReceiveLoop);
                 _receiveThread.IsBackground = true;
@@ -57,58 +46,107 @@ namespace Networking
             catch (System.Exception e) { Debug.LogError($"Server Start Error: {e.Message}"); }
         }
 
+        
+
         private void Update()
         {
-            if (_connected) _packetHandler.ProcessPackets();
+            if (_connected)
+            {
+                _packetHandler.ProcessPackets();
+            }
         }
 
         private void ReceiveLoop()
         {
             byte[] data = new byte[1024];
-            EndPoint remoteIp = new IPEndPoint(IPAddress.Any, 0);
+            EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
 
-            while (_connected)
+            try 
             {
-                try
+                while (_connected)
                 {
-                    int received = _socket.ReceiveFrom(data, ref remoteIp);
+                    try
+                    {
+                        if (_socket == null || _socket.Available == 0 && !_connected) break;
 
-                    bool known = false;
-                    foreach(var c in _connectedClients) {
-                        if(c.ToString() == remoteIp.ToString()) known = true;
+                        int received = _socket.ReceiveFrom(data, ref remote);
+                        
+                        if (!_connected) return;
+
+                        if (!ContainsEndPoint(remote))
+                        {
+                            _connectedClients.Add(remote);
+                            Debug.Log($"New client: {remote}");
+                        }
+
+                        Packet packet = Serialization.Deserialize(data, received);
+                        _packetHandler.EnqueuePacket(packet);
                     }
-                    if(!known) _connectedClients.Add(remoteIp);
+                    catch (SocketException e)
+                    {
+                        if (!_connected) return;
 
-                    Packet packet = Serialization.Deserialize(data, received);
-                    _packetHandler.EnqueuePacket(packet);
+                        if (e.SocketErrorCode == SocketError.TimedOut) continue;
+                        
+                        Debug.LogWarning($"Socket error: {e.SocketErrorCode}");
+                    }
+                    catch (System.Exception e)
+                    {
+                        if (!_connected) return;
+                        Debug.LogError($"Server Loop Error: {e.Message}");
+                    }
                 }
-                catch (System.Exception) {}
             }
-        }
-
-        public void Broadcast(Packet packet)
-        {
-            foreach (var clientEp in _connectedClients)
+            catch (ThreadAbortException)
             {
-                SendTo(packet, clientEp);
+            }
+            finally
+            {
             }
         }
 
-        private void SendTo(Packet packet, EndPoint target)
+        private bool ContainsEndPoint(EndPoint ep)
         {
+            foreach (var client in _connectedClients)
+            {
+                if (client.ToString() == ep.ToString()) return true;
+            }
+            return false;
+        }
+
+        public void SendToAll(Packet packet)
+        {
+            if (!_connected || _socket == null) return;
+
             try
             {
                 byte[] data = Serialization.Serialize(packet);
-                _socket.SendTo(data, target);
+                EndPoint[] currentClients = _connectedClients.ToArray();
+                
+                foreach (var client in currentClients)
+                {
+                    try { _socket.SendTo(data, client); } catch { }
+                }
             }
-            catch { }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Broadcast failed: {e.Message}");
+            }
         }
 
         public void StopServer()
         {
             _connected = false;
             _socket?.Close();
-            _receiveThread?.Join(100);
+            _socket = null;
+
+            if (_receiveThread != null && _receiveThread.IsAlive)
+            {
+                _receiveThread.Join(1000); 
+            }
+            _receiveThread = null;
+
+            Debug.Log("Stopped");
         }
 
         private void OnApplicationQuit() => StopServer();

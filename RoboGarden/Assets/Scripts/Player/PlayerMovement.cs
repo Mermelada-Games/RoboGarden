@@ -17,7 +17,6 @@ namespace Player
         private PlayerInventory _inventory;
         private bool _isGrounded;
         private Vector2 _moveInput;
-        private NetworkObject _netObj;
         private float _lastNetworkUpdate;
         private Vector3 _lastSentPosition;
         private Server _server;
@@ -26,13 +25,17 @@ namespace Player
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
-            _netObj = GetComponent<NetworkObject>();
             _inventory = GetComponent<PlayerInventory>();
         }
 
         private void Start()
         {
-            if (_netObj.isLocallyOwned && GameInput.Instance != null)
+            if (!isLocalPlayer) return;
+
+            _client = FindFirstObjectByType<Client>();
+            _server = FindFirstObjectByType<Server>();
+                
+            if (GameInput.Instance != null)
             {
                 GameInput.Instance.OnJump += Jump;
                 GameInput.Instance.OnMove += OnMoveInput;
@@ -43,14 +46,33 @@ namespace Player
         {
             _moveInput = moveInput;
         }
-        
 
         private void Update()
         {
-            if (!_netObj.isLocallyOwned) return;
+            if (!isLocalPlayer) return;
+
+            if (Time.time - _lastNetworkUpdate >= netUpdateRate)
+            {
+                if (Vector3.Distance(transform.position, _lastSentPosition) > 0.01f)
+                {
+                    SendMovementUpdate();
+                    _lastNetworkUpdate = Time.time;
+                    _lastSentPosition = transform.position;
+                }
+            }
+        }
+
+        private void FixedUpdate()
+        {
+            if (!isLocalPlayer) return;
 
             Vector3 move = new Vector3(_moveInput.x, 0f, _moveInput.y);
-            _rb.MovePosition(transform.position + move * (moveSpeed * Time.fixedDeltaTime));
+
+            if (move.magnitude > 0.1f)
+            {
+                Vector3 targetPosition = _rb.position + move * (moveSpeed * Time.fixedDeltaTime);
+                _rb.MovePosition(targetPosition);
+            }
         }
 
         private void Jump()
@@ -59,7 +81,7 @@ namespace Player
             {
                 _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
                 _isGrounded = false;
-                ReplicationManager.Instance.SendAction(ActionType.Jump, _netObj.networkId, Vector3.zero);
+                FindAnyObjectByType<TestObject>().Interact();
             }
         }
 
@@ -87,10 +109,47 @@ namespace Player
                 _isGrounded = true;
             }
         }
+
+        private void SendMovementUpdate()
+        {
+            PlayerMovementPacket packet = new PlayerMovementPacket(
+                transform.position
+            );
+
+            if (_client)
+            {
+                _client.Send(packet);
+            }
+            else if (_server)
+            {
+                _server.SendToAll(packet);
+            }
+        }
+
+        public void ApplyNetworkMovement(Vector3 position)
+        {
+            StartCoroutine(InterpolateToPosition(position));
+        }
+
+        private IEnumerator InterpolateToPosition(Vector3 targetPos)
+        {
+            Vector3 startPos = transform.position;
+            float elapsed = 0f;
+            float duration = netUpdateRate;
+
+            while (elapsed < duration)
+            {
+                transform.position = Vector3.Lerp(startPos, targetPos, elapsed / duration);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            transform.position = targetPos;
+        }
         
         private void OnDestroy()
         {
-            if (_netObj.isLocallyOwned && GameInput.Instance != null)
+            if (isLocalPlayer && GameInput.Instance != null)
             {
                 GameInput.Instance.OnJump -= Jump;
                 GameInput.Instance.OnMove -= OnMoveInput;

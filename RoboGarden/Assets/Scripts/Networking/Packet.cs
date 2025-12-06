@@ -7,13 +7,15 @@ namespace Networking
     {
         Message,
         Replication,
-        Action
+        PlayerMovement
     }
 
-    public enum ActionType
+    public enum ReplicationAction
     {
-        Jump, 
-        PickupItem
+        Create,
+        Destroy,
+        Update,
+        Event
     }
 
     [Serializable]
@@ -41,46 +43,43 @@ namespace Networking
     }
 
     [Serializable]
-    public class ReplicationPacket : Packet
+    public class PlayerMovementPacket : Packet
     {
-        public int networkId;
         public Vec3 position;
-        public Vec4 rotation;
 
-        public ReplicationPacket(int id, Vector3 pos, Quaternion rot) : base(PacketType.Replication)
+        public PlayerMovementPacket(Vector3 position) : base(PacketType.PlayerMovement)
         {
-            this.networkId = id;
-            this.position = new Vec3(pos);
-            this.rotation = new Vec4(rot);
+            this.position = new Vec3(position);
         }
     }
 
     [Serializable]
-    public class ActionPacket : Packet
+    public class ReplicationPacket : Packet
     {
-        public ActionType actionType;
-        public int networkId;
-        public Vec3 direction;
+        public int netId;
+        public ReplicationAction action;
+        public string payload;
 
-        public ActionPacket(ActionType action, int id, Vector3 dir) : base(PacketType.Action)
+        public ReplicationPacket(int netId, ReplicationAction action, string payload) : base(PacketType.Replication)
         {
-            this.actionType = action;
-            this.networkId = id;
-            this.direction = new Vec3(dir);
+            this.netId = netId;
+            this.action = action;
+            this.payload = payload;
         }
     }
 
     [Serializable]
     public struct Vec3
     {
-        public float x, y, z;
-        public Vec3(Vector3 v) { x = v.x; y = v.y; z = v.z; }
-    }
+        public float x;
+        public float y;
+        public float z;
 
-    [Serializable]
-    public struct Vec4
-    {
-        public float x, y, z, w;
-        public Vec4(Quaternion q) { x = q.x; y = q.y; z = q.z; w = q.w; }
+        public Vec3(Vector3 vector)
+        {
+            x = vector.x;
+            y = vector.y;
+            z = vector.z;
+        }
     }
 }

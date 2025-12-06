@@ -25,30 +25,21 @@ namespace Networking
             {
                 Debug.Log($"Message from {message.sender}: {message.message}");
             };
-
-            _packetHandler.OnReplicationReceived += packet => 
-            {
-                ReplicationManager.Instance.HandleReplicationPacket(packet);
-            };
-
-            _packetHandler.OnActionReceived += packet =>
-            {
-                ReplicationManager.Instance.HandleActionPacket(packet);
-            };
         }
 
-        private void Start()
+        public void Connect(string hostIp = null)
         {
-            Connect();
-        }
+            if (!string.IsNullOrEmpty(hostIp))
+            {
+                this.ip = hostIp;
+            }
 
-        public void Connect()
-        {
             try
             {
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 _socket.ReceiveTimeout = 5000;
-                _endPoint = new IPEndPoint(IPAddress.Parse(ip), port);
+
+                _endPoint = new IPEndPoint(IPAddress.Parse(this.ip), port);
 
                 _connected = true;
 
@@ -74,7 +65,10 @@ namespace Networking
             _socket?.Close();
             _socket = null;
 
-            _receiveThread?.Join(1000);
+            if (_receiveThread != null && _receiveThread.IsAlive)
+            {
+                _receiveThread.Join(1000);
+            }
             _receiveThread = null;
 
             Debug.Log("Disconnected");
@@ -93,37 +87,38 @@ namespace Networking
             byte[] data = new byte[1024];
             EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
 
-            while (_connected)
+            try
             {
-                try
+                while (_connected)
                 {
-                    int received = _socket.ReceiveFrom(data, ref remote);
+                    try
+                    {
+                        if (_socket == null) break;
 
-                    if (!_connected)
-                        return;
+                        int received = _socket.ReceiveFrom(data, ref remote);
 
-                    Packet packet = Serialization.Deserialize(data, received);
-                    _packetHandler.EnqueuePacket(packet);
-                }
-                catch (SocketException e)
-                {
-                    if (e.SocketErrorCode == SocketError.TimedOut)
-                        continue;
+                        if (!_connected) return;
 
-                    if (!_connected)
-                        break;
-
-                    Debug.LogWarning($"Socket error: {e.SocketErrorCode}");
-                }
-                catch (System.Exception e)
-                {
-                    if (_connected)
+                        Packet packet = Serialization.Deserialize(data, received);
+                        _packetHandler.EnqueuePacket(packet);
+                    }
+                    catch (SocketException e)
+                    {
+                        if (!_connected) return;
+                        if (e.SocketErrorCode == SocketError.TimedOut) continue;
+                        
+                        Debug.LogWarning($"Socket error: {e.SocketErrorCode}");
+                    }
+                    catch (System.Exception e)
+                    {
+                        if (!_connected) return;
                         Debug.LogError($"Error: {e.Message}");
-                    break;
+                    }
                 }
             }
-
-            Debug.Log("Receive loop ended");
+            catch (ThreadAbortException)
+            {
+            }
         }
 
         public void Send(Packet packet)

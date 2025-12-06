@@ -19,8 +19,7 @@ namespace Networking
 
         private void Update()
         {
-            // IMPORTANT: Only move if we own the object (usually the Server)
-            if (_netObj != null && !_netObj.isLocallyOwned) return;
+            //if (_netObj != null && !_netObj.isLocallyOwned) return;
 
             // Simple ping-pong movement
             float wave = Mathf.Sin(Time.time * speed);

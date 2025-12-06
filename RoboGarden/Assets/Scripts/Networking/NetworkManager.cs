@@ -1,5 +1,5 @@
 using UnityEngine;
-
+using System;
 
 namespace Networking
 {   
@@ -7,6 +7,8 @@ namespace Networking
     {
         [SerializeField] private GameObject serverPrefab;
         [SerializeField] private GameObject clientPrefab;
+
+        public event Action OnClientConnected;
 
         private GameObject _currentInstance;
 
@@ -20,9 +22,25 @@ namespace Networking
                 return;
             }
             _currentInstance = Instantiate(serverPrefab);
+
+            Server server = _currentInstance.GetComponent<Server>();
+            if (server != null)
+            {
+                var handler = server.GetPacketHandler();
+                if (handler != null)
+                {
+                    handler.OnMessageReceived += (msg) => 
+                    {
+                        if (msg.message == "Connected")
+                        {
+                            OnClientConnected?.Invoke();
+                        }
+                    };
+                }
+            }
         }
 
-        public void StartClient()
+        public void StartClient(string ipAddress = null)
         {
             StopCurrentInstance();
 
@@ -36,7 +54,7 @@ namespace Networking
             Client client = _currentInstance.GetComponent<Client>();
             if(client!= null)
             {
-                client.Connect();
+                client.Connect(ipAddress);
             }
             else
             {

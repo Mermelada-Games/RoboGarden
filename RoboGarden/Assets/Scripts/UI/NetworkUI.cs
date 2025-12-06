@@ -45,42 +45,46 @@ namespace UI
                     menuPanel.SetActive(false);
                 });
             }
+
+            if (networkManager != null)
+            {
+                networkManager.OnClientConnected += SpawnClientPlayer;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (networkManager != null)
+            {
+                networkManager.OnClientConnected -= SpawnClientPlayer;
+            }
+        }
+
+        private void SpawnClientPlayer()
+        {
+            Instantiate(networkPlayerPrefab, Vector3.one, Quaternion.identity);
         }
 
         private void OnHostButtonClicked()
         {
             networkManager.StartHost();
             menuPanel.SetActive(false);
-            SpawnLocalPlayer(1, Vector3.zero); 
-            SpawnRemotePlayer(2, Vector3.one);
             StartGameplay();
+            Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
         }
 
         private void OnJoinButtonClicked()
         {
-            networkManager?.StartClient();
+            string ip = ipInputField != null && !string.IsNullOrEmpty(ipInputField.text) ? ipInputField.text : "127.0.0.1";
+
+            networkManager?.StartClient(ip);
+            
             menuPanel.SetActive(false);
-            SpawnLocalPlayer(2, Vector3.one);
-            SpawnRemotePlayer(1, Vector3.zero);
+            
+            Instantiate(playerPrefab, Vector3.one, Quaternion.identity);
+            Instantiate(networkPlayerPrefab, Vector3.zero, Quaternion.identity);
         }
 
-        private void SpawnLocalPlayer(int id, Vector3 pos)
-        {
-            GameObject p = Instantiate(playerPrefab, pos, Quaternion.identity);
-            NetworkObject netObj = p.GetComponent<NetworkObject>();
-            
-            netObj.networkId = id;
-            netObj.isLocallyOwned = true;
-        }
-
-        private void SpawnRemotePlayer(int id, Vector3 pos)
-        {
-            GameObject p = Instantiate(networkPlayerPrefab, pos, Quaternion.identity);
-            NetworkObject netObj = p.GetComponent<NetworkObject>();
-            
-            netObj.networkId = id;
-            netObj.isLocallyOwned = false;
-        }
         private void StartGameplay()
         {
             BoxGenerator boxGen = FindFirstObjectByType<BoxGenerator>();

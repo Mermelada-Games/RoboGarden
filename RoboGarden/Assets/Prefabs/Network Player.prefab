@@ -45,8 +45,8 @@ GameObject:
   - component: {fileID: 92532243605610316}
   - component: {fileID: 3911348235883379695}
   - component: {fileID: 1498925144998835728}
-  - component: {fileID: 1136649042608560086}
   - component: {fileID: 4371769594058187209}
+  - component: {fileID: 6138216597896646823}
   m_Layer: 0
   m_Name: Network Player
   m_TagString: Untagged
@@ -192,22 +192,6 @@ MonoBehaviour:
   jumpForce: 7
   netUpdateRate: 0.05
   isLocalPlayer: 0
---- !u!114 &1136649042608560086
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7857045293071080577}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 16517b8877470714096f837044617b55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Networking.NetworkObject
-  networkId: 2
-  isLocallyOwned: 0
-  interpolationTime: 0.1
-  sendRate: 0.05
 --- !u!114 &4371769594058187209
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -222,3 +206,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
   handTransform: {fileID: 8992794442895187111}
   etiquetaPrefab: {fileID: 8210257879254892927, guid: 6ea48585c7665504ca01c6a72b06612c, type: 3}
+--- !u!114 &6138216597896646823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7857045293071080577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5dccce26851d1254ea52ce8f49d41d58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Player.NetworkPlayerController

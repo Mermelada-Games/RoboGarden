@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4148347801559596503}
   - component: {fileID: 6815216743816540990}
+  - component: {fileID: -5938676691790861989}
   m_Layer: 0
   m_Name: ClientPrefab
   m_TagString: Untagged
@@ -46,3 +47,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Networking.Client
   port: 9050
   ip: 127.0.0.1
+--- !u!114 &-5938676691790861989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1670462047871123816}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc5edea168e97d04798c7e748ca7002d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Networking.ReplicationManager
