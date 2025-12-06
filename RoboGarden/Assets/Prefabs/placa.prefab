@@ -48,6 +48,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7146521406498821007, guid: 4390b45bdf27bd14eb79859b7ffd2d72, type: 3}
+      propertyPath: m_TagString
+      value: Placa
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 4390b45bdf27bd14eb79859b7ffd2d72, type: 3}
       propertyPath: m_Name
       value: placa
@@ -62,6 +66,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -7146521406498821007, guid: 4390b45bdf27bd14eb79859b7ffd2d72, type: 3}
       insertIndex: -1
       addedObject: {fileID: 9177735485802830596}
+    - targetCorrespondingSourceObject: {fileID: -7146521406498821007, guid: 4390b45bdf27bd14eb79859b7ffd2d72, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9051193408907307962}
   m_SourcePrefab: {fileID: 100100000, guid: 4390b45bdf27bd14eb79859b7ffd2d72, type: 3}
 --- !u!1 &87706214547731966 stripped
 GameObject:
@@ -83,12 +90,25 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 0.015874254, y: 0.015874257, z: 0.0022206854}
   m_Center: {x: 0, y: 0, z: 0.00014422616}
+--- !u!114 &9051193408907307962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 87706214547731966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a06b8f930301de49bc36f3af93ac3c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlacaEtiqueta
+  etiquetaToGive: 0
 --- !u!1 &7577717863906891882 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8416272007918961125, guid: 4390b45bdf27bd14eb79859b7ffd2d72, type: 3}

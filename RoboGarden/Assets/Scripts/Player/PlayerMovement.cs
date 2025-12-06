@@ -14,6 +14,7 @@ namespace Player
         [SerializeField] private bool isLocalPlayer = true;
 
         private Rigidbody _rb;
+        private PlayerInventory _inventory;
         private bool _isGrounded;
         private Vector2 _moveInput;
         private NetworkObject _netObj;
@@ -26,6 +27,7 @@ namespace Player
         {
             _rb = GetComponent<Rigidbody>();
             _netObj = GetComponent<NetworkObject>();
+            _inventory = GetComponent<PlayerInventory>();
         }
 
         private void Start()
@@ -63,6 +65,20 @@ namespace Player
 
         private void OnCollisionEnter(Collision collision) => CheckGround(collision);
         private void OnCollisionStay(Collision collision) => CheckGround(collision);
+        private void OnTriggerEnter(Collider other)
+        {
+            if(other.gameObject.CompareTag("Placa"))
+            {
+                PlacaEtiqueta placa = other.gameObject.GetComponent<PlacaEtiqueta>();
+                if (placa != null && !_inventory.HasEtiqueta())
+                {
+                    placa.ShowEtiqueta();
+                    _inventory.PickUpEtiqueta(placa.etiquetaToGive);
+                    PickUpEtiqueta(placa.etiquetaToGive);
+                }
+                PickUpEtiqueta(placa.etiquetaToGive);
+            }
+        }
 
         private void CheckGround(Collision collision)
         {
@@ -79,6 +95,11 @@ namespace Player
                 GameInput.Instance.OnJump -= Jump;
                 GameInput.Instance.OnMove -= OnMoveInput;
             }
+        }
+
+        private void PickUpEtiqueta(PlacaEtiqueta.EtiquetaType type)
+        {
+            //ENVIAR A LA RED
         }
     }
 }

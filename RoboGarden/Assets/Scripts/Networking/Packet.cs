@@ -13,7 +13,7 @@ namespace Networking
     public enum ActionType
     {
         Jump, 
-        CatchPackage
+        PickupItem
     }
 
     [Serializable]
