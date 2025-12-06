@@ -54,8 +54,6 @@ namespace Networking
             {
                 case PacketType.Message:
                     return JsonUtility.FromJson<MessagePacket>(json);
-                case PacketType.PlayerMovement:
-                    return JsonUtility.FromJson<PlayerMovementPacket>(json);
                 case PacketType.Replication:
                     return JsonUtility.FromJson<ReplicationPacket>(json);
                 default:

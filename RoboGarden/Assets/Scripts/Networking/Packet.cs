@@ -6,8 +6,7 @@ namespace Networking
     public enum PacketType
     {
         Message,
-        Replication,
-        PlayerMovement
+        Replication
     }
 
     public enum ReplicationAction
@@ -43,17 +42,6 @@ namespace Networking
     }
 
     [Serializable]
-    public class PlayerMovementPacket : Packet
-    {
-        public Vec3 position;
-
-        public PlayerMovementPacket(Vector3 position) : base(PacketType.PlayerMovement)
-        {
-            this.position = new Vec3(position);
-        }
-    }
-
-    [Serializable]
     public class ReplicationPacket : Packet
     {
         public int netId;
@@ -80,6 +68,11 @@ namespace Networking
             x = vector.x;
             y = vector.y;
             z = vector.z;
+        }
+
+        public Vector3 ToVector3()
+        {
+            return new Vector3(x, y, z);
         }
     }
 }

@@ -2,13 +2,30 @@ using System.Collections;
 using Input;
 using UnityEngine;
 using Networking;
+using System;
 
 namespace Player
 {
-    public class PlayerMovement : MonoBehaviour
+    [Serializable]
+    public class PlayerState
+    {
+        public Vec3 position;
+        public Vec3 rotation;
+
+        public PlayerState() { }
+
+        public PlayerState(Vector3 pos, Quaternion rot)
+        {
+            position = new Vec3(pos);
+            rotation = new Vec3(rot.eulerAngles);
+        }
+    }
+
+    public class PlayerMovement : NetworkObject
     {
         [SerializeField] private float moveSpeed = 5f;
         [SerializeField] private float jumpForce = 7f;
+        [SerializeField] private float rotationSpeed = 10f;
 
         [SerializeField] private float netUpdateRate = 0.05f;
         [SerializeField] private bool isLocalPlayer = true;
@@ -19,8 +36,14 @@ namespace Player
         private Vector2 _moveInput;
         private float _lastNetworkUpdate;
         private Vector3 _lastSentPosition;
-        private Server _server;
-        private Client _client;
+        private Quaternion _lastSentRotation;
+
+        [System.Serializable]
+        private struct NetworkState
+        {
+            public Vec3 position;
+            public Vec3 rotation;
+        }
 
         private void Awake()
         {
@@ -28,17 +51,42 @@ namespace Player
             _inventory = GetComponent<PlayerInventory>();
         }
 
-        private void Start()
+        protected override void Start()
         {
-            if (!isLocalPlayer) return;
+            base.Start();
 
-            _client = FindFirstObjectByType<Client>();
-            _server = FindFirstObjectByType<Server>();
+            if (!isLocalPlayer) return;
                 
             if (GameInput.Instance != null)
             {
                 GameInput.Instance.OnJump += Jump;
                 GameInput.Instance.OnMove += OnMoveInput;
+            }
+        }
+
+        public override string SerializeState()
+        {
+            NetworkState state = new NetworkState
+            {
+                position = new Vec3(transform.position),
+                rotation = new Vec3(transform.eulerAngles)
+            };
+            return JsonUtility.ToJson(state);
+        }
+
+        public override void OnReplication(ReplicationAction action, string payload)
+        {
+            if (action == ReplicationAction.Update)
+            {
+                if (isLocalPlayer) return;
+
+                NetworkState state = JsonUtility.FromJson<NetworkState>(payload);
+                
+                Vector3 targetPos = new Vector3(state.position.x, state.position.y, state.position.z);
+                Vector3 rotVec = new Vector3(state.rotation.x, state.rotation.y, state.rotation.z);
+                Quaternion targetRot = Quaternion.Euler(rotVec);
+
+                ApplyNetworkMovement(targetPos, targetRot);
             }
         }
 
@@ -53,11 +101,16 @@ namespace Player
 
             if (Time.time - _lastNetworkUpdate >= netUpdateRate)
             {
-                if (Vector3.Distance(transform.position, _lastSentPosition) > 0.01f)
+                bool positionChanged = Vector3.Distance(transform.position, _lastSentPosition) > 0.01f;
+                bool rotationChanged = Quaternion.Angle(transform.rotation, _lastSentRotation) > 1f;
+
+                if (positionChanged || rotationChanged)
                 {
-                    SendMovementUpdate();
+                    BroadcastStateUpdate();
+                    
                     _lastNetworkUpdate = Time.time;
                     _lastSentPosition = transform.position;
+                    _lastSentRotation = transform.rotation;
                 }
             }
         }
@@ -72,6 +125,10 @@ namespace Player
             {
                 Vector3 targetPosition = _rb.position + move * (moveSpeed * Time.fixedDeltaTime);
                 _rb.MovePosition(targetPosition);
+
+                Quaternion targetRotation = Quaternion.LookRotation(move);
+                Quaternion nextRotation = Quaternion.Slerp(_rb.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
+                _rb.MoveRotation(nextRotation);
             }
         }
 
@@ -81,7 +138,9 @@ namespace Player
             {
                 _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
                 _isGrounded = false;
-                FindAnyObjectByType<TestObject>().Interact();
+
+                var testObj = FindAnyObjectByType<TestObject>();
+                if(testObj) testObj.Interact();
             }
         }
 
@@ -110,45 +169,35 @@ namespace Player
             }
         }
 
-        private void SendMovementUpdate()
+        public void ApplyNetworkMovement(Vector3 position, Quaternion rotation)
         {
-            PlayerMovementPacket packet = new PlayerMovementPacket(
-                transform.position
-            );
-
-            if (_client)
-            {
-                _client.Send(packet);
-            }
-            else if (_server)
-            {
-                _server.SendToAll(packet);
-            }
+            StartCoroutine(InterpolateToPosition(position, rotation));
         }
 
-        public void ApplyNetworkMovement(Vector3 position)
-        {
-            StartCoroutine(InterpolateToPosition(position));
-        }
-
-        private IEnumerator InterpolateToPosition(Vector3 targetPos)
+        private IEnumerator InterpolateToPosition(Vector3 targetPos, Quaternion targetRot)
         {
             Vector3 startPos = transform.position;
+            Quaternion startRot = transform.rotation;
             float elapsed = 0f;
             float duration = netUpdateRate;
 
             while (elapsed < duration)
             {
-                transform.position = Vector3.Lerp(startPos, targetPos, elapsed / duration);
+                float t = elapsed / duration;
+                transform.position = Vector3.Lerp(startPos, targetPos, t);
+                transform.rotation = Quaternion.Slerp(startRot, targetRot, t);
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
             transform.position = targetPos;
+            transform.rotation = targetRot;
         }
-        
-        private void OnDestroy()
+
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             if (isLocalPlayer && GameInput.Instance != null)
             {
                 GameInput.Instance.OnJump -= Jump;
@@ -159,6 +208,11 @@ namespace Player
         private void PickUpEtiqueta(PlacaEtiqueta.EtiquetaType type)
         {
             //ENVIAR A LA RED
+        }
+
+        public void SetLocalPlayer(bool isLocal)
+        {
+            isLocalPlayer = isLocal;
         }
     }
 }

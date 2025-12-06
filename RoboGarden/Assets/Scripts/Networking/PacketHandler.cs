@@ -7,11 +7,9 @@ namespace Networking
     public class PacketHandler
     {
         public delegate void MessageHandler(MessagePacket packet);
-        public delegate void PlayerMovementHandler(PlayerMovementPacket packet);
         public delegate void ReplicationHandler(ReplicationPacket packet);
         
         public event MessageHandler OnMessageReceived;
-        public event PlayerMovementHandler OnPlayerMovementReceived;
         public event ReplicationHandler OnReplicationReceived;
         public event Action<Packet> OnPacketReceived;
         
@@ -53,9 +51,6 @@ namespace Networking
             {
                 case PacketType.Message:
                     OnMessageReceived?.Invoke(packet as MessagePacket);
-                    break;
-                case PacketType.PlayerMovement:
-                    OnPlayerMovementReceived?.Invoke(packet as PlayerMovementPacket);
                     break;
                 case PacketType.Replication:
                     OnReplicationReceived?.Invoke(packet as ReplicationPacket);

@@ -14,8 +14,6 @@ namespace UI
         [SerializeField] private GameObject menuPanel;
         [SerializeField] private Button openMenuButton;
         [SerializeField] private Button closeMenuButton;
-        [SerializeField] private GameObject playerPrefab;
-        [SerializeField] private GameObject networkPlayerPrefab;
 
         private void Awake()
         {
@@ -45,24 +43,6 @@ namespace UI
                     menuPanel.SetActive(false);
                 });
             }
-
-            if (networkManager != null)
-            {
-                networkManager.OnClientConnected += SpawnClientPlayer;
-            }
-        }
-
-        private void OnDestroy()
-        {
-            if (networkManager != null)
-            {
-                networkManager.OnClientConnected -= SpawnClientPlayer;
-            }
-        }
-
-        private void SpawnClientPlayer()
-        {
-            Instantiate(networkPlayerPrefab, Vector3.one, Quaternion.identity);
         }
 
         private void OnHostButtonClicked()
@@ -70,7 +50,6 @@ namespace UI
             networkManager.StartHost();
             menuPanel.SetActive(false);
             StartGameplay();
-            Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
         }
 
         private void OnJoinButtonClicked()
@@ -80,9 +59,6 @@ namespace UI
             networkManager?.StartClient(ip);
             
             menuPanel.SetActive(false);
-            
-            Instantiate(playerPrefab, Vector3.one, Quaternion.identity);
-            Instantiate(networkPlayerPrefab, Vector3.zero, Quaternion.identity);
         }
 
         private void StartGameplay()

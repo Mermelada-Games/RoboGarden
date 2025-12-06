@@ -46,7 +46,6 @@ GameObject:
   - component: {fileID: 3911348235883379695}
   - component: {fileID: 1498925144998835728}
   - component: {fileID: 4371769594058187209}
-  - component: {fileID: 6138216597896646823}
   m_Layer: 0
   m_Name: Network Player
   m_TagString: Untagged
@@ -188,6 +187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: daa0740787abccf458a09fbf4d7263d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player.PlayerMovement
+  networkId: 2
   moveSpeed: 5
   jumpForce: 7
   netUpdateRate: 0.05
@@ -206,15 +206,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
   handTransform: {fileID: 8992794442895187111}
   etiquetaPrefab: {fileID: 8210257879254892927, guid: 6ea48585c7665504ca01c6a72b06612c, type: 3}
---- !u!114 &6138216597896646823
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7857045293071080577}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5dccce26851d1254ea52ce8f49d41d58, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Player.NetworkPlayerController

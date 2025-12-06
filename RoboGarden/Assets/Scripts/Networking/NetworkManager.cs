@@ -1,16 +1,24 @@
 using UnityEngine;
 using System;
+using Player;
 
 namespace Networking
 {   
     public class NetworkManager : MonoBehaviour
     {
+        [Header("Networking Prefabs")]
         [SerializeField] private GameObject serverPrefab;
         [SerializeField] private GameObject clientPrefab;
 
-        public event Action OnClientConnected;
+        [Header("Player Settings")]
+        [SerializeField] private GameObject playerPrefab;
+        [SerializeField] private Transform hostSpawnPoint;
+        [SerializeField] private Transform clientSpawnPoint;
 
         private GameObject _currentInstance;
+
+        private const int HOST_ID = 100;
+        private const int CLIENT_ID = 200;
 
         public void StartHost()
         {
@@ -33,11 +41,13 @@ namespace Networking
                     {
                         if (msg.message == "Connected")
                         {
-                            OnClientConnected?.Invoke();
+                            SpawnPlayer(CLIENT_ID, false, clientSpawnPoint.position);
                         }
                     };
                 }
             }
+
+            SpawnPlayer(HOST_ID, true, hostSpawnPoint.position);
         }
 
         public void StartClient(string ipAddress = null)
@@ -59,6 +69,30 @@ namespace Networking
             else
             {
                 Debug.LogError("El prefab del cliente no tiene un componente Client.");
+            }
+
+            SpawnPlayer(CLIENT_ID, true, clientSpawnPoint.position);
+
+            SpawnPlayer(HOST_ID, false, hostSpawnPoint.position);
+        }
+
+        private void SpawnPlayer(int id, bool isLocal, Vector3 position)
+        {
+            if (playerPrefab == null) return;
+
+            GameObject playerInstance = Instantiate(playerPrefab, position, Quaternion.identity);
+
+            PlayerMovement movement = playerInstance.GetComponent<PlayerMovement>();
+            if (movement != null)
+            {
+                movement.networkId = id;
+                movement.SetLocalPlayer(isLocal);
+            }
+
+            if (!isLocal)
+            {
+                Rigidbody rb = playerInstance.GetComponent<Rigidbody>();
+                if (rb) rb.isKinematic = true;
             }
         }
 
