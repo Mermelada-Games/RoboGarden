@@ -14,8 +14,8 @@ namespace Player
         [SerializeField] private float rotationSpeed = 10f;
 
         [SerializeField] private float netUpdateRate = 0.05f;
-        [SerializeField] private bool isLocalPlayer = true;
-        public bool IsLocalPlayer => isLocalPlayer;
+
+        public bool IsLocalPlayer => HasAuthority;
 
         private Rigidbody _rb;
         private PlayerInventory _inventory;
@@ -42,13 +42,21 @@ namespace Player
         {
             base.Start();
 
-            if (!isLocalPlayer) return;
-                
-            if (GameInput.Instance != null)
+            if (IsLocalPlayer && GameInput.Instance != null)
             {
                 GameInput.Instance.OnJump += Jump;
                 GameInput.Instance.OnMove += OnMoveInput;
             }
+        }
+
+        public void SetAsLocalPlayer()
+        {
+            SetAuthority(true);
+        }
+
+        public void SetAsRemotePlayer()
+        {
+            SetAuthority(false);
         }
 
         public override string SerializeState()
@@ -68,15 +76,30 @@ namespace Player
         {
             if (action == ReplicationAction.Update)
             {
-                if (isLocalPlayer) return;
+                if (IsLocalPlayer) return;
 
                 NetworkState state = JsonUtility.FromJson<NetworkState>(payload);
                 
-                Vector3 targetPos = new Vector3(state.position.x, state.position.y, state.position.z);
+                Vector3 targetPos = state.position.ToVector3();
                 float rotY = state.rotation * 360f / 255f;
                 Quaternion targetRot = Quaternion.Euler(0, rotY, 0);
 
                 ApplyNetworkMovement(targetPos, targetRot);
+            }
+            else if (action == ReplicationAction.Event)
+            {
+                if (payload.StartsWith("PickupEtiqueta:"))
+                {
+                    string etiquetaTypeStr = payload.Substring("PickupEtiqueta:".Length);
+                    
+                    if (Enum.TryParse(etiquetaTypeStr, out PlacaEtiqueta.EtiquetaType etiquetaType))
+                    {
+                        if (_inventory != null && !_inventory.HasEtiqueta())
+                        {
+                            _inventory.PickUpEtiqueta(etiquetaType);
+                        }
+                    }
+                }
             }
         }
 
@@ -87,7 +110,7 @@ namespace Player
 
         private void Update()
         {
-            if (!isLocalPlayer) return;
+            if (!IsLocalPlayer) return;
 
             if (Time.time - _lastNetworkUpdate >= netUpdateRate)
             {
@@ -107,7 +130,7 @@ namespace Player
 
         private void FixedUpdate()
         {
-            if (!isLocalPlayer) return;
+            if (!IsLocalPlayer) return;
 
             Vector3 move = new Vector3(_moveInput.x, 0f, _moveInput.y);
 
@@ -138,11 +161,8 @@ namespace Player
         private void OnCollisionStay(Collision collision) => CheckGround(collision);
         private void OnTriggerEnter(Collider other)
         {
-            PlayerMovement p = other.GetComponent<PlayerMovement>();
-            if (p != null && p.IsLocalPlayer)
-            {
-                isLocalPlayer = true;
-            }
+            if (!IsLocalPlayer) return;
+            
             if(other.gameObject.CompareTag("Placa"))
             {
                 PlacaEtiqueta placa = other.gameObject.GetComponent<PlacaEtiqueta>();
@@ -150,9 +170,9 @@ namespace Player
                 {
                     placa.ShowEtiqueta();
                     _inventory.PickUpEtiqueta(placa.etiquetaToGive);
-                    PickUpEtiqueta(placa.etiquetaToGive);
+
+                    BroadcastEvent($"PickupEtiqueta:{placa.etiquetaToGive}");
                 }
-                PickUpEtiqueta(placa.etiquetaToGive);
             }
         }
 
@@ -193,21 +213,11 @@ namespace Player
         {
             base.OnDestroy();
 
-            if (isLocalPlayer && GameInput.Instance != null)
+            if (IsLocalPlayer && GameInput.Instance != null)
             {
                 GameInput.Instance.OnJump -= Jump;
                 GameInput.Instance.OnMove -= OnMoveInput;
             }
-        }
-
-        private void PickUpEtiqueta(PlacaEtiqueta.EtiquetaType type)
-        {
-            //ENVIAR A LA RED
-        }
-
-        public void SetLocalPlayer(bool isLocal)
-        {
-            isLocalPlayer = isLocal;
         }
     }
 }

@@ -9,12 +9,39 @@ namespace Networking
     {
         public int networkId;
 
+        protected bool HasAuthority { get; private set; }
+        protected bool IsServer { get; private set; }
+        protected bool IsClient { get; private set; }
+
+        private bool _authoritySetManually = false;
+
         protected virtual void Start()
         {
+            DetectNetworkRole();
+            
             if (ReplicationManager.Instance != null)
             {
                 ReplicationManager.Instance.RegisterObject(this);
+            }}
+
+        private void DetectNetworkRole()
+        {
+            Server server = FindFirstObjectByType<Server>();
+            Client client = FindFirstObjectByType<Client>();
+            
+            IsServer = server != null;
+            IsClient = client != null;
+
+            if (!_authoritySetManually)
+            {
+                HasAuthority = IsServer;
             }
+        }
+
+        protected void SetAuthority(bool authority)
+        {
+            HasAuthority = authority;
+            _authoritySetManually = true;
         }
 
         protected virtual void OnDestroy()
@@ -30,12 +57,28 @@ namespace Networking
 
         protected void BroadcastStateUpdate()
         {
+            if (!HasAuthority) return;
+            
             if (ReplicationManager.Instance != null)
             {
                 ReplicationManager.Instance.SendReplication(
                     networkId, 
                     ReplicationAction.Update, 
                     SerializeState()
+                );
+            }
+        }
+
+        protected void BroadcastEvent(string eventName)
+        {
+            if (!HasAuthority) return;
+            
+            if (ReplicationManager.Instance != null)
+            {
+                ReplicationManager.Instance.SendReplication(
+                    networkId, 
+                    ReplicationAction.Event, 
+                    eventName
                 );
             }
         }

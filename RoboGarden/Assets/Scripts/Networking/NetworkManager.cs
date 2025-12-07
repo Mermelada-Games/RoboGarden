@@ -20,6 +20,14 @@ namespace Networking
         private const int HOST_ID = 100;
         private const int CLIENT_ID = 200;
 
+        [Serializable]
+        private struct PlayerSpawnData
+        {
+            public int playerId;
+            public Vec3 position;
+            public bool isLocal;
+        }
+
         public void StartHost()
         {
             StopCurrentInstance();
@@ -41,9 +49,13 @@ namespace Networking
                     {
                         if (msg.message == "Connected")
                         {
+                            SendPlayerSpawn(HOST_ID, hostSpawnPoint.position, false);
                             SpawnPlayer(CLIENT_ID, false, clientSpawnPoint.position);
+                            SendPlayerSpawn(CLIENT_ID, clientSpawnPoint.position, true);
                         }
                     };
+                    
+                    handler.OnReplicationReceived += HandlePlayerSpawn;
                 }
             }
 
@@ -64,16 +76,45 @@ namespace Networking
             Client client = _currentInstance.GetComponent<Client>();
             if(client!= null)
             {
+                var handler = client.GetPacketHandler();
+                if (handler != null)
+                {
+                    handler.OnReplicationReceived += HandlePlayerSpawn;
+                }
+                
                 client.Connect(ipAddress);
             }
             else
             {
                 Debug.LogError("El prefab del cliente no tiene un componente Client.");
             }
+        }
 
-            SpawnPlayer(CLIENT_ID, true, clientSpawnPoint.position);
+        private void HandlePlayerSpawn(ReplicationPacket packet)
+        {
+            if (packet.action != ReplicationAction.Create) return;
+            if (packet.netId != HOST_ID && packet.netId != CLIENT_ID) return;
 
-            SpawnPlayer(HOST_ID, false, hostSpawnPoint.position);
+            PlayerSpawnData data = JsonUtility.FromJson<PlayerSpawnData>(packet.payload);
+            
+            SpawnPlayer(data.playerId, data.isLocal, data.position.ToVector3());
+        }
+
+        private void SendPlayerSpawn(int playerId, Vector3 position, bool isLocal)
+        {
+            PlayerSpawnData data = new PlayerSpawnData
+            {
+                playerId = playerId,
+                position = new Vec3(position),
+                isLocal = isLocal
+            };
+            
+            string payload = JsonUtility.ToJson(data);
+            
+            if (ReplicationManager.Instance != null)
+            {
+                ReplicationManager.Instance.SendReplication(playerId, ReplicationAction.Create, payload);
+            }
         }
 
         private void SpawnPlayer(int id, bool isLocal, Vector3 position)
@@ -86,7 +127,15 @@ namespace Networking
             if (movement != null)
             {
                 movement.networkId = id;
-                movement.SetLocalPlayer(isLocal);
+                
+                if (isLocal)
+                {
+                    movement.SetAsLocalPlayer();
+                }
+                else
+                {
+                    movement.SetAsRemotePlayer();
+                }
             }
 
             if (!isLocal)
