@@ -2,7 +2,6 @@ using UnityEngine;
 using Input;
 using Player;
 using Networking;
-using UnityEditor.PackageManager.Requests;
 
 public class ButtonScript : NetworkObject
 {
@@ -33,17 +32,17 @@ public class ButtonScript : NetworkObject
         base.Start();
 
         if (GameInput.Instance != null)
-    {
-        GameInput.Instance.OnInteract += HandleInteractInput;
-    }
-    else
-    {
-        GameInput foundInput = FindFirstObjectByType<GameInput>();
-        if(foundInput != null)
         {
-            foundInput.OnInteract += HandleInteractInput;
+            GameInput.Instance.OnInteract += HandleInteractInput;
         }
-    }
+        else
+        {
+            GameInput foundInput = FindFirstObjectByType<GameInput>();
+            if(foundInput != null)
+            {
+                foundInput.OnInteract += HandleInteractInput;
+            }
+        }
     }
 
     private void HandleInteractInput()
@@ -57,27 +56,27 @@ public class ButtonScript : NetworkObject
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
-    {
-        PlayerMovement player = other.GetComponent<PlayerMovement>();
-        if (player != null && player.IsLocalPlayer)
         {
-            isLocalPlayerInside = true;
-            ShowVisualFeedback();
+            PlayerMovement player = other.GetComponent<PlayerMovement>();
+            if (player != null && player.IsLocalPlayer)
+            {
+                isLocalPlayerInside = true;
+                ShowVisualFeedback();
+            }
         }
-    }
     }
 
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
-    {
-        PlayerMovement player = other.GetComponent<PlayerMovement>();
-        if (player != null && player.IsLocalPlayer)
         {
-            isLocalPlayerInside = false;
-            HideVisualFeedback();
+            PlayerMovement player = other.GetComponent<PlayerMovement>();
+            if (player != null && player.IsLocalPlayer)
+            {
+                isLocalPlayerInside = false;
+                HideVisualFeedback();
+            }
         }
-    }
     }
 
     private void RequestButtonAction()

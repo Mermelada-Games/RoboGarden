@@ -14,7 +14,6 @@ public class PlacaEtiqueta : MonoBehaviour
 
     public void ShowEtiqueta()
     {
-        // Logic to display the etiqueta on the placa
         Debug.Log($"Etiqueta {etiquetaToGive} displayed on placa.");
     }
 }

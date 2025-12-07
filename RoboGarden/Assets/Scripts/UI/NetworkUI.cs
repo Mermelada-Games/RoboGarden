@@ -66,7 +66,7 @@ namespace UI
             BoxGenerator boxGen = FindFirstObjectByType<BoxGenerator>();
             if (boxGen != null)
             {
-                boxGen.InvokeRepeating("GenerateBox", 2f, 70f);
+                boxGen.GenerateBox();
             }
         }
 
