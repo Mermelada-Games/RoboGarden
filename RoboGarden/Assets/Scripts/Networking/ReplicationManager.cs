@@ -91,6 +91,15 @@ namespace Networking
             }
         }
         
+        public NetworkObject GetNetworkObject(int netId)
+        {
+            if (_networkObjects.TryGetValue(netId, out NetworkObject obj))
+            {
+                return obj;
+            }
+            return null;
+        }
+        
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;

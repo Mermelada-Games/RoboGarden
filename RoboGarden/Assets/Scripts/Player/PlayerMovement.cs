@@ -11,7 +11,8 @@ namespace Player
     {
         private enum PlayerEvent : byte
         {
-            PickupEtiqueta = 0
+            PickupEtiqueta = 0,
+            PlaceEtiqueta = 1
         }
 
         [SerializeField] private float moveSpeed = 5f;
@@ -103,6 +104,43 @@ namespace Player
                                 _inventory.PickUpEtiqueta((PlacaEtiqueta.EtiquetaType)eventData);
                             }
                             break;
+                        case PlayerEvent.PlaceEtiqueta:
+                            HandleRemotePlaceEtiqueta(eventData);
+                            break;
+                    }
+                }
+            }
+        }
+
+        public void AttemptPlaceEtiqueta(TapaInteraction tapa)
+        {
+            if (!IsLocalPlayer) return;
+            if (_inventory == null || !_inventory.HasEtiqueta()) return;
+
+            PlacaEtiqueta.EtiquetaType type = _inventory.currentEtiquetaType;
+            tapa.VisualPlaceEtiqueta(type);
+            _inventory.RemoveEtiqueta();
+            string payload = $"{(int)PlayerEvent.PlaceEtiqueta},{tapa.networkId},{(int)type}";
+            
+            if (ReplicationManager.Instance != null)
+            {
+                ReplicationManager.Instance.SendReplication(networkId, ReplicationAction.Event, payload);
+            }
+        }
+        
+        private void HandleRemotePlaceEtiqueta(int tapaNetworkId)
+        {
+            if (ReplicationManager.Instance != null)
+            {
+                NetworkObject obj = ReplicationManager.Instance.GetNetworkObject(tapaNetworkId);
+                if (obj != null && obj is TapaInteraction tapa)
+                {
+                    if (_inventory != null && _inventory.HasEtiqueta())
+                    {
+                        PlacaEtiqueta.EtiquetaType type = _inventory.currentEtiquetaType;
+
+                        tapa.VisualPlaceEtiqueta(type);
+                        _inventory.RemoveEtiqueta();
                     }
                 }
             }

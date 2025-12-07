@@ -2202,6 +2202,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8014684905582827518, guid: 58f4f39546a111345ae0f1f8df89ebaa, type: 3}
+      propertyPath: tapaPrefab
+      value: 
+      objectReference: {fileID: 6155076656921721759, guid: 7c36ad431df2f2640906d9b2286435d8, type: 3}
+    - target: {fileID: 8014684905582827518, guid: 58f4f39546a111345ae0f1f8df89ebaa, type: 3}
       propertyPath: tapaSpawnPoint
       value: 
       objectReference: {fileID: 586974876}
