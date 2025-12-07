@@ -8,21 +8,14 @@ namespace Networking
     public static class Serialization
     {
         [Serializable]
-        private class PacketWrapper
+        private class PacketTypeReader
         {
-            public PacketType type;
-            public string data;
+            public PacketType packetType;
         }
 
         public static byte[] Serialize(Packet packet)
         {
-            PacketWrapper wrapper = new PacketWrapper
-            {
-                type = packet.packetType,
-                data = JsonUtility.ToJson(packet)
-            };
-            
-            string json = JsonUtility.ToJson(wrapper);
+            string json = JsonUtility.ToJson(packet);
             byte[] data = Encoding.UTF8.GetBytes(json);
 
             using MemoryStream stream = new MemoryStream();
@@ -41,11 +34,10 @@ namespace Networking
 
             byte[] bytes = reader.ReadBytes(reader.ReadInt32());
             string json = Encoding.UTF8.GetString(bytes);
-                    
-            PacketWrapper wrapper = JsonUtility.FromJson<PacketWrapper>(json);
-            Packet packet = DeserializePacket(wrapper.type, wrapper.data);
 
-            return packet;
+            PacketTypeReader temp = JsonUtility.FromJson<PacketTypeReader>(json);
+            
+            return DeserializePacket(temp.packetType, json);
         }
 
         private static Packet DeserializePacket(PacketType type, string json)
