@@ -6,20 +6,6 @@ using System;
 
 namespace Player
 {
-    [Serializable]
-    public class PlayerState
-    {
-        public Vec3 position;
-        public Vec3 rotation;
-
-        public PlayerState() { }
-
-        public PlayerState(Vector3 pos, Quaternion rot)
-        {
-            position = new Vec3(pos);
-            rotation = new Vec3(rot.eulerAngles);
-        }
-    }
 
     public class PlayerMovement : NetworkObject
     {
@@ -39,11 +25,11 @@ namespace Player
         private Vector3 _lastSentPosition;
         private Quaternion _lastSentRotation;
 
-        [System.Serializable]
+        [Serializable]
         private struct NetworkState
         {
             public Vec3 position;
-            public Vec3 rotation;
+            public byte rotation;
         }
 
         private void Awake()
@@ -67,10 +53,13 @@ namespace Player
 
         public override string SerializeState()
         {
+            float angle = transform.eulerAngles.y;
+            byte compRot = (byte)(angle * 255f / 360f);
+
             NetworkState state = new NetworkState
             {
                 position = new Vec3(transform.position),
-                rotation = new Vec3(transform.eulerAngles)
+                rotation = compRot
             };
             return JsonUtility.ToJson(state);
         }
@@ -84,8 +73,8 @@ namespace Player
                 NetworkState state = JsonUtility.FromJson<NetworkState>(payload);
                 
                 Vector3 targetPos = new Vector3(state.position.x, state.position.y, state.position.z);
-                Vector3 rotVec = new Vector3(state.rotation.x, state.rotation.y, state.rotation.z);
-                Quaternion targetRot = Quaternion.Euler(rotVec);
+                float rotY = state.rotation * 360f / 255f;
+                Quaternion targetRot = Quaternion.Euler(0, rotY, 0);
 
                 ApplyNetworkMovement(targetPos, targetRot);
             }
