@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -69,18 +70,58 @@ namespace Networking
             }
         }
 
-        protected void BroadcastEvent(string eventName)
+        protected void BroadcastEvent(byte eventId, byte eventData)
         {
             if (!HasAuthority) return;
             
+            SendEvent(eventId, eventData);
+        }
+
+        protected void BroadcastEvent<T1, T2>(T1 eventId, T2 eventData)
+            where T1 : Enum
+            where T2 : Enum
+        {
+            BroadcastEvent(Convert.ToByte(eventId), Convert.ToByte(eventData));
+        }
+
+        private void SendEvent(byte eventId, byte eventData)
+        {
             if (ReplicationManager.Instance != null)
             {
+                string payload = $"{eventId},{eventData}";
+                
                 ReplicationManager.Instance.SendReplication(
                     networkId, 
                     ReplicationAction.Event, 
-                    eventName
+                    payload
                 );
             }
+        }
+
+        protected bool TryParseNetworkEvent(string payload, out byte eventId, out byte eventData)
+        {
+            string[] parts = payload.Split(',');
+
+            if (parts.Length == 1)
+            {
+                if (byte.TryParse(parts[0], out eventId))
+                {
+                    eventData = 0;
+                    return true;
+                }
+            }
+            else if (parts.Length >= 2)
+            {
+                if (byte.TryParse(parts[0], out eventId) && 
+                    byte.TryParse(parts[1], out eventData))
+                {
+                    return true;
+                }
+            }
+
+            eventId = 0;
+            eventData = 0;
+            return false;
         }
 
 #if UNITY_EDITOR

@@ -9,6 +9,11 @@ namespace Player
 
     public class PlayerMovement : NetworkObject
     {
+        private enum PlayerEvent : byte
+        {
+            PickupEtiqueta = 0
+        }
+
         [SerializeField] private float moveSpeed = 5f;
         [SerializeField] private float jumpForce = 7f;
         [SerializeField] private float rotationSpeed = 10f;
@@ -88,16 +93,16 @@ namespace Player
             }
             else if (action == ReplicationAction.Event)
             {
-                if (payload.StartsWith("PickupEtiqueta:"))
+                if (TryParseNetworkEvent(payload, out byte eventId, out byte eventData))
                 {
-                    string etiquetaTypeStr = payload.Substring("PickupEtiqueta:".Length);
-                    
-                    if (Enum.TryParse(etiquetaTypeStr, out PlacaEtiqueta.EtiquetaType etiquetaType))
+                    switch ((PlayerEvent)eventId)
                     {
-                        if (_inventory != null && !_inventory.HasEtiqueta())
-                        {
-                            _inventory.PickUpEtiqueta(etiquetaType);
-                        }
+                        case PlayerEvent.PickupEtiqueta:
+                            if (_inventory != null && !_inventory.HasEtiqueta())
+                            {
+                                _inventory.PickUpEtiqueta((PlacaEtiqueta.EtiquetaType)eventData);
+                            }
+                            break;
                     }
                 }
             }
@@ -171,7 +176,7 @@ namespace Player
                     placa.ShowEtiqueta();
                     _inventory.PickUpEtiqueta(placa.etiquetaToGive);
 
-                    BroadcastEvent($"PickupEtiqueta:{placa.etiquetaToGive}");
+                    BroadcastEvent(PlayerEvent.PickupEtiqueta, placa.etiquetaToGive);
                 }
             }
         }

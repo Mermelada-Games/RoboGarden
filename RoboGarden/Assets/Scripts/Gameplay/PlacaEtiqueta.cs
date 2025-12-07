@@ -2,10 +2,10 @@ using UnityEngine;
 
 public class PlacaEtiqueta : MonoBehaviour
 {
-    public enum EtiquetaType
+    public enum EtiquetaType : byte
     {
-        None=0,
-        Orange= 1,
+        None = 0,
+        Orange = 1,
         Green = 2,
         Blue = 3
     }
