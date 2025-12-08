@@ -90,6 +90,10 @@ namespace Networking
                 }
                 
                 client.OnDisconnectedFromServer += () => 
+                {
+                    Stop();
+                };
+
                 client.Connect(ipAddress);
             }
             else
