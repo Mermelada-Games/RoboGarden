@@ -20,6 +20,8 @@ namespace Networking
         private const int HOST_ID = 100;
         private const int CLIENT_ID = 200;
 
+        public event Action OnGameStopped;
+
         [Serializable]
         private struct PlayerSpawnData
         {
@@ -42,6 +44,11 @@ namespace Networking
             Server server = _currentInstance.GetComponent<Server>();
             if (server != null)
             {
+                server.OnClientDisconnected += (id) => 
+                {
+                    Stop();
+                };
+
                 var handler = server.GetPacketHandler();
                 if (handler != null)
                 {
@@ -82,6 +89,7 @@ namespace Networking
                     handler.OnReplicationReceived += HandlePlayerSpawn;
                 }
                 
+                client.OnDisconnectedFromServer += () => 
                 client.Connect(ipAddress);
             }
             else
@@ -148,6 +156,11 @@ namespace Networking
         public void Stop()
         {
             StopCurrentInstance();
+
+            PlayerMovement[] players = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None);
+            foreach(var p in players) Destroy(p.gameObject);
+
+            OnGameStopped?.Invoke();
         }
 
         private void StopCurrentInstance()

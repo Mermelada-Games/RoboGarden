@@ -3,12 +3,14 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace Networking
 {
     public class Server : MonoBehaviour
     {
         [SerializeField] private int port = 9050;
+        [SerializeField] private int maxClients = 1; 
         
         private Socket _socket;
         private Thread _receiveThread;
@@ -16,12 +18,19 @@ namespace Networking
         private List<EndPoint> _connectedClients = new List<EndPoint>();
         private PacketHandler _packetHandler;
 
+        public event Action<int> OnClientDisconnected; 
+
         private void Awake()
         {
             _packetHandler = new PacketHandler();
             _packetHandler.OnMessageReceived += message =>
             {
                 Debug.Log($"Message received {message.sender}: {message.message}");
+                if (message.message == "Disconnect")
+                {
+                    _connectedClients.Clear(); 
+                    OnClientDisconnected?.Invoke(200);
+                }
             };
         }
 
@@ -73,8 +82,21 @@ namespace Networking
                         
                         if (!_connected) return;
 
-                        if (!ContainsEndPoint(remote))
+                        bool isNewConnection = !ContainsEndPoint(remote);
+
+                        if (isNewConnection)
                         {
+                            if (_connectedClients.Count >= maxClients)
+                            {
+                                Debug.LogWarning($"Connection rejected from {remote}: Server Full");
+
+                                Packet rejectPacket = new MessagePacket("Server", "ServerFull");
+                                byte[] rejectData = Serialization.Serialize(rejectPacket);
+                                _socket.SendTo(rejectData, remote);
+
+                                continue; 
+                            }
+                            
                             _connectedClients.Add(remote);
                             Debug.Log($"New client: {remote}");
                         }
@@ -136,6 +158,12 @@ namespace Networking
 
         public void StopServer()
         {
+            if (_connected)
+            {
+                Packet shutdownPacket = new MessagePacket("Server", "Disconnect");
+                SendToAll(shutdownPacket);
+            }
+
             _connected = false;
             _socket?.Close();
             _socket = null;
@@ -145,6 +173,7 @@ namespace Networking
                 _receiveThread.Join(1000); 
             }
             _receiveThread = null;
+            _connectedClients.Clear();
 
             Debug.Log("Stopped");
         }

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using UnityEngine;
+using System;
 
 namespace Networking
 {
@@ -17,6 +18,8 @@ namespace Networking
 
         private PacketHandler _packetHandler;
 
+        public event Action OnDisconnectedFromServer;
+
         private void Awake()
         {
             _packetHandler = new PacketHandler();
@@ -24,6 +27,12 @@ namespace Networking
             _packetHandler.OnMessageReceived += message =>
             {
                 Debug.Log($"Message from {message.sender}: {message.message}");
+
+                if (message.message == "Disconnect" || message.message == "ServerFull")
+                {
+                    Disconnect();
+                    OnDisconnectedFromServer?.Invoke();
+                }
             };
         }
 
@@ -60,6 +69,10 @@ namespace Networking
 
         public void Disconnect()
         {
+            if (!_connected) return;
+
+            Send(new MessagePacket("Client", "Disconnect"));
+
             _connected = false;
 
             _socket?.Close();

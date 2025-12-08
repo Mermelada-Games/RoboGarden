@@ -44,6 +44,19 @@ namespace UI
                     menuPanel.SetActive(false);
                 });
             }
+
+            if (networkManager != null)
+            {
+                networkManager.OnGameStopped += OnGameReset;
+            }
+        }
+
+        private void OnDestroy()
+        {
+             if (networkManager != null)
+            {
+                networkManager.OnGameStopped -= OnGameReset;
+            }
         }
 
         private void OnHostButtonClicked()
@@ -62,6 +75,12 @@ namespace UI
             
             menuPanel.SetActive(false);
             level.SetActive(true);
+        }
+
+        private void OnGameReset()
+        {
+            menuPanel.SetActive(true);
+            level.SetActive(false); 
         }
 
         private void StartGameplay()
