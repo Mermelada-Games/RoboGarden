@@ -122,9 +122,6 @@ public class ButtonScript : NetworkObject
             case ButtonType.SetDestination:
                 ExecuteSetDestination();
                 break;
-            case ButtonType.SendBox:
-                //ExecuteSendBox();
-                break;
         }
     }
 
@@ -165,12 +162,6 @@ public class ButtonScript : NetworkObject
             DestinationManager.Instance.SetDestination(destinationId);
         }
     }
-
-    /*private void ExecuteSendBox()
-    {
-        PlayAnimation();
-        Debug.Log("Lógica de Enviar Caja ejecutada.");
-    }*/
 
     private void PlayAnimation()
     {
