@@ -9,13 +9,15 @@ public class ButtonScript : NetworkObject
     {
         None,
         GenerateTapa,
-        SendBox
+        SendBox,
+        SetDestination
     }
 
     [SerializeField] private GameObject visualFeedback;
     [SerializeField] private ButtonType buttonType;
     [SerializeField] private GameObject tapaPrefab;
     [SerializeField] private Transform tapaSpawnPoint;
+    [SerializeField] private int destinationId;
     private Animator animator;
     private bool isLocalPlayerInside = false;
     private GameObject currentTapaInstance = null;
@@ -82,6 +84,7 @@ public class ButtonScript : NetworkObject
     private void RequestButtonAction()
     {
         string actionPayload = buttonType.ToString(); 
+        
         if (ReplicationManager.Instance != null)
         {
             ReplicationManager.Instance.SendReplication(
@@ -103,6 +106,10 @@ public class ButtonScript : NetworkObject
             {
                 //ExecuteSendBox();
             }
+            else if (payload == ButtonType.SetDestination.ToString())
+            {
+                ExecuteSetDestination();
+            }
         }
     }
 
@@ -118,6 +125,13 @@ public class ButtonScript : NetworkObject
         if (currentTapaInstance == null && tapaPrefab != null && tapaSpawnPoint != null)
         {
             currentTapaInstance = Instantiate(tapaPrefab, tapaSpawnPoint.position, tapaSpawnPoint.rotation);
+        }
+    }
+    private void ExecuteSetDestination()
+    {
+        if(DestinationManager.Instance != null)
+        {
+            DestinationManager.Instance.SetDestination(destinationId);
         }
     }
 
