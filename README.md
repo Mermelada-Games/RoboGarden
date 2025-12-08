@@ -1,8 +1,8 @@
-# RoboGarden 🤖🌱
+# RoboGarden
 
 > **A Cooperative Multiplayer Networking Project**
 
-## 📖 Description
+## Description
 
 **RoboGarden** is a cooperative *party game* developed in Unity where **two players** control small **gardener robots**. Their goal is to **manage and organize all the seeds** in a large garden, ensuring that each seed reaches its correct location to **grow and bloom**.
 
@@ -12,7 +12,7 @@ This project focuses on the implementation of a **Custom Networking Solution** b
 
 ---
 
-## 🎮 Gameplay Features
+## Gameplay Features
 
 The game revolves around a logistics assembly line where coordination is key.
 
@@ -25,7 +25,7 @@ The game revolves around a logistics assembly line where coordination is key.
 
 ---
 
-## 🕹️ Controls
+## Controls
 
 | Action | Key | Description |
 | :--- | :---: | :--- |
@@ -35,13 +35,9 @@ The game revolves around a logistics assembly line where coordination is key.
 
 ---
 
-## 🛠️ Network Architecture (Technical Overview)
+## Network Architecture (Technical Overview)
 
 This project implements a custom networking engine from scratch using **UDP Sockets**. The system ensures a consistent **World State Replication** across multiple clients.
-
-
-
-[Image of client server UDP game architecture diagram]
 
 
 ### Core Requirements Implemented:
@@ -62,7 +58,7 @@ This project implements a custom networking engine from scratch using **UDP Sock
     * Supports multiple data types.
 ---
 
-## 👥 Team Members
+## Team Members
 
 * **[Guillem Alqueza](https://github.com/guillemalqueza)**
 * **[Sergio Fernández](https://github.com/Serfercont)**
