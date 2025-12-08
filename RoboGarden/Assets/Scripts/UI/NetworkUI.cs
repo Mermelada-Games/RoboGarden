@@ -14,6 +14,7 @@ namespace UI
         [SerializeField] private GameObject menuPanel;
         [SerializeField] private Button openMenuButton;
         [SerializeField] private Button closeMenuButton;
+        [SerializeField] private GameObject level;
 
         private void Awake()
         {
@@ -49,6 +50,7 @@ namespace UI
         {
             networkManager.StartHost();
             menuPanel.SetActive(false);
+            level.SetActive(true);
             StartGameplay();
         }
 
@@ -59,6 +61,7 @@ namespace UI
             networkManager?.StartClient(ip);
             
             menuPanel.SetActive(false);
+            level.SetActive(true);
         }
 
         private void StartGameplay()

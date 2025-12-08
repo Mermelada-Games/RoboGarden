@@ -16,6 +16,13 @@ namespace Networking
 
         private bool _authoritySetManually = false;
 
+        private static int _globalNextNetworkId = 300;
+
+        public static int GetNextNetworkId()
+        {
+            return _globalNextNetworkId++;
+        }
+
         protected virtual void Start()
         {
             DetectNetworkRole();
@@ -84,18 +91,22 @@ namespace Networking
             BroadcastEvent(Convert.ToByte(eventId), Convert.ToByte(eventData));
         }
 
-        private void SendEvent(byte eventId, byte eventData)
+        protected void SendEvent(string payload)
         {
             if (ReplicationManager.Instance != null)
             {
-                string payload = $"{eventId},{eventData}";
-                
                 ReplicationManager.Instance.SendReplication(
                     networkId, 
                     ReplicationAction.Event, 
                     payload
                 );
             }
+        }
+
+        protected void SendEvent(byte eventId, byte eventData)
+        {
+            string payload = $"{eventId},{eventData}";
+            SendEvent(payload);
         }
 
         protected bool TryParseNetworkEvent(string payload, out byte eventId, out byte eventData)
@@ -121,6 +132,24 @@ namespace Networking
 
             eventId = 0;
             eventData = 0;
+            return false;
+        }
+
+        protected bool TryParseNetworkEvent(string payload, out byte eventId, out int intData)
+        {
+            string[] parts = payload.Split(',');
+
+            if (parts.Length >= 2)
+            {
+                if (byte.TryParse(parts[0], out eventId) && 
+                    int.TryParse(parts[1], out intData))
+                {
+                    return true;
+                }
+            }
+
+            eventId = 0;
+            intData = 0;
             return false;
         }
 

@@ -5,12 +5,18 @@ using Networking;
 
 public class ButtonScript : NetworkObject
 {
-    enum ButtonType
+    private enum ButtonNetworkEvent : byte
     {
-        None,
-        GenerateTapa,
-        SendBox,
-        SetDestination
+        RequestAction = 1,
+        SpawnTapa = 2
+    }
+
+    public enum ButtonType : byte
+    {
+        None = 0,
+        GenerateTapa = 1,
+        SendBox = 2,
+        SetDestination = 3
     }
 
     [SerializeField] private GameObject visualFeedback;
@@ -18,6 +24,7 @@ public class ButtonScript : NetworkObject
     [SerializeField] private GameObject tapaPrefab;
     [SerializeField] private Transform tapaSpawnPoint;
     [SerializeField] private int destinationId;
+    
     private Animator animator;
     private bool isLocalPlayerInside = false;
     private GameObject currentTapaInstance = null;
@@ -57,59 +64,67 @@ public class ButtonScript : NetworkObject
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && other.GetComponent<PlayerMovement>()?.IsLocalPlayer == true)
         {
-            PlayerMovement player = other.GetComponent<PlayerMovement>();
-            if (player != null && player.IsLocalPlayer)
-            {
-                isLocalPlayerInside = true;
-                ShowVisualFeedback();
-            }
+            isLocalPlayerInside = true;
+            ShowVisualFeedback();
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && other.GetComponent<PlayerMovement>()?.IsLocalPlayer == true)
         {
-            PlayerMovement player = other.GetComponent<PlayerMovement>();
-            if (player != null && player.IsLocalPlayer)
-            {
-                isLocalPlayerInside = false;
-                HideVisualFeedback();
-            }
+            isLocalPlayerInside = false;
+            HideVisualFeedback();
         }
     }
 
     private void RequestButtonAction()
     {
-        string actionPayload = buttonType.ToString(); 
-        
-        if (ReplicationManager.Instance != null)
-        {
-            ReplicationManager.Instance.SendReplication(
-                this.networkId, 
-                ReplicationAction.Event, 
-                actionPayload
-            );
-        }
+        SendEvent((byte)ButtonNetworkEvent.RequestAction, (byte)buttonType);
     }
+
     public override void OnReplication(ReplicationAction action, string payload)
     {
-        if (action == ReplicationAction.Event)
+        if (action != ReplicationAction.Event) return;
+
+        if (TryParseNetworkEvent(payload, out byte eventIdByte, out int intData))
         {
-            if (payload == ButtonType.GenerateTapa.ToString())
+            ButtonNetworkEvent eventId = (ButtonNetworkEvent)eventIdByte;
+
+            switch (eventId)
             {
-                ExecuteGenerateTapa();
+                case ButtonNetworkEvent.RequestAction:
+                    HandleRequestAction((ButtonType)intData);
+                    break;
+                case ButtonNetworkEvent.SpawnTapa:
+                    ExecuteSpawnTapa(intData);
+                    break;
             }
-            else if (payload == ButtonType.SendBox.ToString())
-            {
-                //ExecuteSendBox();
-            }
-            else if (payload == ButtonType.SetDestination.ToString())
-            {
+        }
+    }
+
+    private void HandleRequestAction(ButtonType requestedType)
+    {
+        if (requestedType != buttonType) return;
+
+        PlayAnimation();
+
+        switch (requestedType)
+        {
+            case ButtonType.GenerateTapa:
+                if (IsServer)
+                {
+                    ServerHandleGenerateTapa();
+                }
+                break;
+            case ButtonType.SetDestination:
                 ExecuteSetDestination();
-            }
+                break;
+            case ButtonType.SendBox:
+                //ExecuteSendBox();
+                break;
         }
     }
 
@@ -118,15 +133,31 @@ public class ButtonScript : NetworkObject
         return "";
     }
 
-    private void ExecuteGenerateTapa()
+    private void ServerHandleGenerateTapa()
     {
-        PlayAnimation();
+        if (currentTapaInstance == null && tapaPrefab != null && tapaSpawnPoint != null)
+        {
+            int newId = GetNextNetworkId();
+            string spawnPayload = $"{(byte)ButtonNetworkEvent.SpawnTapa},{newId}";
+            SendEvent(spawnPayload);
+        }
+    }
 
+    private void ExecuteSpawnTapa(int netId)
+    {
         if (currentTapaInstance == null && tapaPrefab != null && tapaSpawnPoint != null)
         {
             currentTapaInstance = Instantiate(tapaPrefab, tapaSpawnPoint.position, tapaSpawnPoint.rotation);
+            var netObj = currentTapaInstance.GetComponentInChildren<NetworkObject>();
+            if (netObj != null)
+            {
+                netObj.networkId = netId;
+                if (ReplicationManager.Instance != null)
+                    ReplicationManager.Instance.RegisterObject(netObj);
+            }
         }
     }
+
     private void ExecuteSetDestination()
     {
         if(DestinationManager.Instance != null)
