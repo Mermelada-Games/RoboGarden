@@ -94,18 +94,26 @@ namespace Player
             }
             else if (action == ReplicationAction.Event)
             {
-                if (TryParseNetworkEvent(payload, out byte eventId, out byte eventData))
+                string[] parts = payload.Split(',');
+                
+                if (parts.Length > 0 && byte.TryParse(parts[0], out byte eventId))
                 {
                     switch ((PlayerEvent)eventId)
                     {
                         case PlayerEvent.PickupEtiqueta:
-                            if (_inventory != null && !_inventory.HasEtiqueta())
+                            if (parts.Length >= 2 && byte.TryParse(parts[1], out byte pickupType))
                             {
-                                _inventory.PickUpEtiqueta((PlacaEtiqueta.EtiquetaType)eventData);
+                                if (_inventory != null && !_inventory.HasEtiqueta())
+                                {
+                                    _inventory.PickUpEtiqueta((PlacaEtiqueta.EtiquetaType)pickupType);
+                                }
                             }
                             break;
                         case PlayerEvent.PlaceEtiqueta:
-                            HandleRemotePlaceEtiqueta(eventData);
+                            if (parts.Length >= 3 && int.TryParse(parts[1], out int tapaNetId) && int.TryParse(parts[2], out int etiquetaTypeInt))
+                            {
+                                HandleRemotePlaceEtiqueta(tapaNetId, (PlacaEtiqueta.EtiquetaType)etiquetaTypeInt);
+                            }
                             break;
                     }
                 }
@@ -128,18 +136,16 @@ namespace Player
             }
         }
         
-        private void HandleRemotePlaceEtiqueta(int tapaNetworkId)
+        private void HandleRemotePlaceEtiqueta(int tapaNetworkId, PlacaEtiqueta.EtiquetaType type)
         {
             if (ReplicationManager.Instance != null)
             {
                 NetworkObject obj = ReplicationManager.Instance.GetNetworkObject(tapaNetworkId);
                 if (obj != null && obj is TapaInteraction tapa)
                 {
-                    if (_inventory != null && _inventory.HasEtiqueta())
+                    tapa.VisualPlaceEtiqueta(type);
+                    if(_inventory != null && _inventory.HasEtiqueta())
                     {
-                        PlacaEtiqueta.EtiquetaType type = _inventory.currentEtiquetaType;
-
-                        tapa.VisualPlaceEtiqueta(type);
                         _inventory.RemoveEtiqueta();
                     }
                 }

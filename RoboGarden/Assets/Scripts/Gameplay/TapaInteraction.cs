@@ -10,13 +10,30 @@ public class TapaInteraction : NetworkObject
     [SerializeField] private GameObject etiquetaPrefab;
     private bool isPlayerInsideTrigger = false;
     private PlayerMovement localPlayer;
+    private PlacaEtiqueta.EtiquetaType currentEtiqueta = PlacaEtiqueta.EtiquetaType.None;
 
     private void Awake()
     {
         if(visualFeedback != null) visualFeedback.SetActive(false);    
     }
-    public override string SerializeState() => ""; 
-    public override void OnReplication(ReplicationAction action, string payload) { }
+    public override string SerializeState()
+    {
+        return ((byte)currentEtiqueta).ToString();
+    } 
+    public override void OnReplication(ReplicationAction action, string payload)
+    {
+        if(action == ReplicationAction.Update)
+        {
+            if(byte.TryParse(payload, out byte etiquetaByte))
+            {
+                PlacaEtiqueta.EtiquetaType newType = (PlacaEtiqueta.EtiquetaType)etiquetaByte;
+                if(newType != currentEtiqueta)
+                {
+                    VisualPlaceEtiqueta(newType);
+                }
+            }
+        }
+    }
 
     protected override void Start()
     {
@@ -45,8 +62,15 @@ public class TapaInteraction : NetworkObject
 
     public void VisualPlaceEtiqueta(PlacaEtiqueta.EtiquetaType type)
     {
+        currentEtiqueta = type;
+
         if(etiquetaPrefab != null && etiquetaPoint != null)
         {
+            foreach(Transform child in etiquetaPoint)
+            {
+                Destroy(child.gameObject);
+            }
+            
             GameObject etiquetaInstance = Instantiate(etiquetaPrefab, etiquetaPoint);
             etiquetaInstance.transform.localPosition = Vector3.zero;
             etiquetaInstance.transform.localRotation = Quaternion.identity;
