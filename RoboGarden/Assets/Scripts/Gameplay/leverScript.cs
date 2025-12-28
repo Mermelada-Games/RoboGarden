@@ -44,8 +44,17 @@ public class leverScript : NetworkObject
         if (isLocalPlayerInside)
         {
             isControllingGrua = !isControllingGrua;
-            SendEvent((byte)LeverNetworkEvent.SetControl, (byte) (isControllingGrua ? 1 : 0));
+            string payload = $"{(byte)LeverNetworkEvent.SetControl},{(byte)(isControllingGrua ? 1 : 0)}";
+            ReplicationManager.Instance.SendReplication(this.networkId, ReplicationAction.Event, payload);
             SetPlayerMovementEnabled(!isControllingGrua);
+            if (isControllingGrua)
+            {
+                ShowVisualFeedback();
+            }
+            else
+            {
+                HideVisualFeedback();
+            }
         }
     }
     private PlayerInputActions inputActions;
@@ -80,22 +89,47 @@ public class leverScript : NetworkObject
 
     public override void OnReplication(ReplicationAction action, string payload)
     {
-        if(action != ReplicationAction.Event)
-            return;
-        
-        if(TryParseNetworkEvent(payload, out byte eventId, out byte eventData))
+        if (action == ReplicationAction.Update)
         {
-            if(eventId == (byte)LeverNetworkEvent.SetControl)
+            if (byte.TryParse(payload, out byte control))
             {
-                isControllingGrua = eventData == 1;
+                isControllingGrua = control == 1;
                 SetPlayerMovementEnabled(!isControllingGrua);
+                if (isControllingGrua)
+                {
+                    ShowVisualFeedback();
+                }
+                else
+                {
+                    HideVisualFeedback();
+                }
+            }
+        }
+        else if (action == ReplicationAction.Event)
+        {
+            string[] data = payload.Split(',');
+            if (data.Length == 2 && byte.TryParse(data[0], out byte eventId) && byte.TryParse(data[1], out byte eventData))
+            {
+                if (eventId == (byte)LeverNetworkEvent.SetControl)
+                {
+                    isControllingGrua = eventData == 1;
+                    SetPlayerMovementEnabled(!isControllingGrua);
+                    if (isControllingGrua)
+                    {
+                        ShowVisualFeedback();
+                    }
+                    else
+                    {
+                        HideVisualFeedback();
+                    }
+                }
             }
         }
     }
 
     public override string SerializeState()
     {
-        return "";
+        return ((byte)(isControllingGrua ? 1 : 0)).ToString();
     }
 
     private bool IsLocalPlayer()
@@ -129,7 +163,8 @@ public class leverScript : NetworkObject
             if(isControllingGrua)
             {
                 isControllingGrua = false;
-                SendEvent((byte)LeverNetworkEvent.SetControl, 0);
+                string payload = $"{(byte)LeverNetworkEvent.SetControl},0";
+                ReplicationManager.Instance.SendReplication(this.networkId, ReplicationAction.Event, payload);
                 SetPlayerMovementEnabled(true);
             }
             localPlayerMovement = null;
