@@ -5,6 +5,12 @@ using Networking;
 
 public class leverScript : NetworkObject
 {
+    public enum LeverType
+    {
+        Horizontal,
+        Vertical
+    }
+    [SerializeField] private LeverType leverType = LeverType.Horizontal;
     private enum LeverNetworkEvent : byte
     {
         SetControl = 1
@@ -77,7 +83,15 @@ public class leverScript : NetworkObject
         if (isControllingGrua && gruaController != null && IsLocalPlayer())
         {
             gruaMoveInput = inputActions.Player.Move.ReadValue<Vector2>();
-            Vector3 move = new Vector3(gruaMoveInput.x, 0, gruaMoveInput.y);
+            Vector3 move = Vector3.zero;
+            if (leverType == LeverType.Horizontal)
+            {
+                move = new Vector3(gruaMoveInput.x, 0, gruaMoveInput.y);
+            }
+            else if (leverType == LeverType.Vertical)
+            {
+                move = new Vector3(0, gruaMoveInput.y, 0);
+            }
             if (move != Vector3.zero)
             {
                 Vector3 delta = move * Time.deltaTime * gruaController.moveSpeed;
