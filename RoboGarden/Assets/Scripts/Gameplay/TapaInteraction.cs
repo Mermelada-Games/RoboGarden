@@ -11,6 +11,39 @@ public class TapaInteraction : NetworkObject
     private bool isPlayerInsideTrigger = false;
     private PlayerMovement localPlayer;
     private PlacaEtiqueta.EtiquetaType currentEtiqueta = PlacaEtiqueta.EtiquetaType.None;
+    private GruaController attachedGrua = null;
+    public bool IsAttachedToGrua => attachedGrua != null;
+    public void AttachToGrua(GruaController grua, Transform attachPoint)
+    {
+        attachedGrua = grua;
+        if (attachPoint != null)
+        {
+            transform.SetParent(attachPoint);
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+        }
+        else
+        {
+            transform.SetParent(grua.transform);
+        }
+        var rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.useGravity = false;
+            rb.isKinematic = true;
+        }
+    }
+    public void DetachFromGrua()
+    {
+        attachedGrua = null;
+        transform.SetParent(null);
+        var rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.useGravity = true;
+            rb.isKinematic = false;
+        }
+    }
 
     private void Awake()
     {
@@ -30,6 +63,21 @@ public class TapaInteraction : NetworkObject
                 if(newType != currentEtiqueta)
                 {
                     VisualPlaceEtiqueta(newType);
+                }
+            }
+        }
+        else if (action == ReplicationAction.Event)
+        {
+            string[] data = payload.Split(',');
+            if (data.Length == 2 && byte.TryParse(data[0], out byte eventId) && eventId == 2)
+            {
+                if (int.TryParse(data[1], out int gruaNetId))
+                {
+                    var gruaObj = ReplicationManager.Instance.GetNetworkObject(gruaNetId) as GruaController;
+                    if (gruaObj != null)
+                    {
+                        AttachToGrua(gruaObj, gruaObj.tapaAttachPoint);
+                    }
                 }
             }
         }

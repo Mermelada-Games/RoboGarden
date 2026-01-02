@@ -6,11 +6,24 @@ public class GruaController : NetworkObject
 {
     private enum GruaNetworkEvent : byte
     {
-        MoveGrua = 1
+        MoveGrua = 1,
+        AttachTapa = 2
     }
     public float moveSpeed = 2f;
     private Vector3 targetPosition;
     private float lerpSpeed = 10f;
+
+    [SerializeField] public Transform tapaAttachPoint;
+
+    private void OnTriggerEnter(Collider other)
+    {
+        var tapa = other.GetComponent<TapaInteraction>();
+        if (tapa != null && !tapa.IsAttachedToGrua)
+        {
+            string payload = $"{(byte)GruaNetworkEvent.AttachTapa},{this.networkId}";
+            ReplicationManager.Instance.SendReplication(tapa.networkId, ReplicationAction.Event, payload);
+        }
+    }
 
     private void Awake()
     {

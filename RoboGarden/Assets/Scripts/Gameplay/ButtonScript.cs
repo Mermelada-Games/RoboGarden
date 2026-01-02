@@ -109,15 +109,10 @@ public class ButtonScript : NetworkObject
     {
         if (requestedType != buttonType) return;
 
-        PlayAnimation();
-
         switch (requestedType)
         {
             case ButtonType.GenerateTapa:
-                if (IsServer)
-                {
-                    ServerHandleGenerateTapa();
-                }
+                ServerHandleGenerateTapa();
                 break;
             case ButtonType.SetDestination:
                 ExecuteSetDestination();
@@ -161,11 +156,6 @@ public class ButtonScript : NetworkObject
         {
             DestinationManager.Instance.SetDestination(destinationId);
         }
-    }
-
-    private void PlayAnimation()
-    {
-        if(animator) animator.SetTrigger("Press");
     }
 
     private void ShowVisualFeedback()
